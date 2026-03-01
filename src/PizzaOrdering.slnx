@@ -1,0 +1,4 @@
+<Solution>
+  <Project Path="PizzaBot.CreateFoundryAgent/PizzaBot.CreateFoundryAgent.csproj" />
+  <Project Path="PizzaBot.UseExistingAgent/PizzaBot.UseExistingAgent.csproj" />
+</Solution>
