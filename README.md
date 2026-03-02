@@ -25,6 +25,7 @@ The workshop is the authoritative guide for what each concept means and why it m
 |---|---|---|
 | [PizzaBot.CreateFoundryAgent](src/PizzaBot.CreateFoundryAgent/) | `Azure.AI.Projects` | Full-featured agent with system prompts, RAG (file search), a custom tool, and MCP integration |
 | [PizzaBot.UseExistingAgent](src/PizzaBot.UseExistingAgent/) | `Azure.AI.Projects` | Connecting to an already-provisioned Foundry agent rather than creating a new one |
+| [PizzaBot.AgentFramework](src/PizzaBot.AgentFramework/) | `Microsoft.Agents.AI` | Same full-featured agent built using the Microsoft Agent Framework and Foundry's Persistent Agents API |
 
 Each project has its own README explaining what it demonstrates and how to configure it.
 
