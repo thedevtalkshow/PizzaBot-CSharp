@@ -17,7 +17,7 @@ public class PizzaCalculator
 
         Console.WriteLine($"PizzaCalculator: Calculating pizzas for {numberOfPeople} people with {appetite} appetite ({slicesPerPerson} slices/person)...");
 
-        int slicesPerPizza = 12;
+        int slicesPerPizza = 8;
         int totalSlicesNeeded = numberOfPeople * slicesPerPerson;
         return (int)Math.Ceiling((double)totalSlicesNeeded / slicesPerPizza);
     }
