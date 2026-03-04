@@ -5,12 +5,14 @@
     <TargetFramework>net10.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
+	<EnablePreviewFeatures>true</EnablePreviewFeatures>
     <UserSecretsId>ee8fdf3c-21bc-4e9b-918b-2375f5e101c6</UserSecretsId>
   </PropertyGroup>
 
   <ItemGroup>
     <PackageReference Include="Azure.Identity" Version="1.17.1" />
-    <PackageReference Include="Microsoft.Agents.AI.AzureAI.Persistent" Version="1.0.0-preview.260219.1"/>
+	<PackageReference Include="Azure.AI.Projects" Version="1.2.*-*" />
+	<PackageReference Include="Microsoft.Agents.AI.AzureAI" Version="1.0.0-rc2" />
     <PackageReference Include="Microsoft.Extensions.Configuration.Json" Version="9.*" />
     <PackageReference Include="Microsoft.Extensions.Configuration.EnvironmentVariables" Version="9.*" />
     <PackageReference Include="Microsoft.Extensions.Configuration.UserSecrets" Version="9.*" />

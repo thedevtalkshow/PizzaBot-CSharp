@@ -1,9 +1,10 @@
-using Azure.AI.Agents.Persistent;
+using Azure.AI.Projects;
 using Azure.Identity;
 using Microsoft.Agents.AI;
 using Microsoft.Extensions.AI;
 using Microsoft.Extensions.Configuration;
 
+// get our values from configuration (appsettings.json, environment variables, or user secrets)
 var config = new ConfigurationBuilder()
     .SetBasePath(AppContext.BaseDirectory)
     .AddJsonFile("appsettings.json", optional: true)
@@ -20,106 +21,22 @@ string vectorStoreId = config["PizzaBot:VectorStoreId"]
 string mcpServerUri = config["PizzaBot:McpServerUri"]
     ?? throw new InvalidOperationException("PizzaBot:McpServerUri is required. Set it in appsettings.json, an environment variable (PizzaBot__McpServerUri), or user secrets.");
 
+// set the Pizzabot's instructions
 string instructions = File.ReadAllText("instructions.txt");
 
 // Connect to the Foundry Persistent Agents service
-PersistentAgentsClient client = new PersistentAgentsClient(projectEndpoint, new DefaultAzureCredential());
+AIProjectClient aiProjectClient = new(new Uri(projectEndpoint), new DefaultAzureCredential());
 
-// --- Tool definitions registered with the agent in Foundry ---
+// Define the function tool.
+AITool tool = AIFunctionFactory.Create(PizzaCalculator.CalculateNumberOfPizzasToOrder);
 
-// Function tool: schema is declared here so the model knows about the tool.
-// The implementation runs locally and is dispatched automatically by the Agent Framework.
-FunctionToolDefinition pizzaCalculatorToolDef = new(
-    name: "CalculateNumberOfPizzasToOrder",
-    description: "Calculates the number of pizzas to order based on the number of people and their appetite level.",
-    parameters: BinaryData.FromObjectAsJson(new
-    {
-        type = "object",
-        properties = new
-        {
-            numberOfPeople = new
-            {
-                type = "integer",
-                description = "The number of people we are ordering pizza for."
-            },
-            appetite = new
-            {
-                type = "string",
-                description = "The appetite level: 'light' (1 slice per person), 'average' (2 slices per person), or 'heavy' (4 slices per person). Defaults to 'average'.",
-                @enum = new[] { "light", "average", "heavy" }
-            }
-        },
-        required = new[] { "numberOfPeople" }
-    }));
-
-// File search tool: queries the Contoso pizza menu vector store hosted in Foundry
-FileSearchToolDefinition fileSearchToolDef = new();
-ToolResources toolResources = new()
-{
-    FileSearch = new FileSearchToolResource()
-    {
-        VectorStoreIds = { vectorStoreId }
-    }
-};
-
-// MCP tool: calls the Contoso order-management MCP server hosted in Azure
-const string mcpServerLabel = "contoso-pizza-mcp";
-MCPToolDefinition mcpToolDef = new(serverLabel: mcpServerLabel, serverUrl: mcpServerUri);
-
-// --- Find existing agent or create a new one ---
-PersistentAgent? existingAgent = null;
-await foreach (PersistentAgent a in client.Administration.GetAgentsAsync())
-{
-    if (a.Name == agentName)
-    {
-        existingAgent = a;
-        break;
-    }
-}
-
-PersistentAgent agentDefinition;
-if (existingAgent is not null)
-{
-    agentDefinition = existingAgent;
-    Console.WriteLine($"Using existing agent: {agentDefinition.Name} (id: {agentDefinition.Id})");
-}
-else
-{
-    agentDefinition = (await client.Administration.CreateAgentAsync(
-        model: modelDeploymentName,
-        name: agentName,
-        instructions: instructions,
-        tools: [pizzaCalculatorToolDef, fileSearchToolDef, mcpToolDef],
-        toolResources: toolResources)).Value;
-    Console.WriteLine($"Agent created: {agentDefinition.Name} (id: {agentDefinition.Id})");
-}
-
-// Retrieve as an AIAgent (Agent Framework type)
-AIAgent agent = await client.GetAIAgentAsync(agentDefinition.Id);
+// Get an existing agent from Foundry, and define the function tool.
+ChatClientAgent agent = await aiProjectClient.GetAIAgentAsync(
+    agentName,
+    tools: [tool]);
 
 // Create a session to maintain conversation history server-side
 AgentSession session = await agent.CreateSessionAsync();
-
-// Run options:
-//   - Tools: provides the local implementation so the Agent Framework can dispatch
-//     function calls automatically (no manual requires_action loop needed)
-//   - RawRepresentationFactory: configures the underlying run to allow MCP tool
-//     calls without per-call approval prompts
-AIFunction pizzaCalcFunction = AIFunctionFactory.Create(PizzaCalculator.CalculateNumberOfPizzasToOrder);
-ChatClientAgentRunOptions runOptions = new()
-{
-    ChatOptions = new()
-    {
-        Tools = [pizzaCalcFunction],
-        RawRepresentationFactory = (_) => new ThreadAndRunOptions()
-        {
-            ToolResources = new MCPToolResource(serverLabel: mcpServerLabel)
-            {
-                RequireApproval = new MCPApproval("never"),
-            }.ToToolResources()
-        }
-    }
-};
 
 // Conversation loop
 string[] exitCommands = ["exit", "quit"];
@@ -138,6 +55,6 @@ while (true)
         break;
     }
 
-    AgentResponse response = await agent.RunAsync(userInput, session, runOptions);
+    AgentResponse response = await agent.RunAsync(userInput, session);
     Console.WriteLine($"Agent: {response}\n");
 }
