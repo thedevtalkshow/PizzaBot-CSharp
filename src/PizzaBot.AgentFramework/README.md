@@ -1,42 +1,30 @@
 # PizzaBot.AgentFramework
 
-This project demonstrates how to build a fully-featured conversational pizza ordering agent using the **Microsoft Agent Framework** (`Microsoft.Agents.AI`), which provides a higher-level abstraction over the Azure AI Foundry Persistent Agents service.
-
-It creates a new persistent agent named **ContosoPizzaBotWithAgentFramework** that has the same capabilities as the agent built in `PizzaBot.CreateFoundryAgent` — system prompts, RAG-based file search, an MCP-connected order system, and a local pizza calculator function — but implemented using the Agent Framework SDK instead of `Azure.AI.Projects`.
+This project demonstrates how to connect to an existing **Azure AI Foundry** persistent agent using the **Microsoft Agent Framework** (`Microsoft.Agents.AI`). Unlike the other projects in this repo, there is no client-side code for handling function tool call responses and submitting results back to the agent — the Agent Framework dispatches registered functions automatically. The result is the simplest conversation loop of any sample here: a single `RunAsync` call per turn, with no `requires_action` handling at all.
 
 ## What It Demonstrates
 
-- **Agent provisioning** — creating a persistent agent in Foundry with file search, MCP, and function tool definitions via `Administration.CreateAgentAsync`
-- **Find-or-create pattern** — reuses an existing agent by name instead of creating a duplicate on every run
-- **File search (RAG)** — queries the Contoso pizza menu vector store hosted in Foundry
-- **MCP tool integration** — connects to the Contoso order management MCP server hosted in Azure
-- **Automatic function dispatch** — registers a local `PizzaCalculator` implementation via `AIFunctionFactory`; the Agent Framework handles the tool call/response loop automatically
+- **Connecting to an existing agent** — looks up a deployed Foundry persistent agent by name via `GetAIAgentAsync`
+- **File search (RAG)** — the existing agent already has a vector store wired up; the client benefits without any extra configuration
+- **MCP tool integration** — the existing agent already has the MCP server connected; no client-side setup required
+- **Automatic function dispatch** — registers a local `PizzaCalculator` implementation via `AIFunctionFactory`; the Agent Framework intercepts tool call requests and executes the function automatically, with no manual dispatch code needed
 - **Session management** — maintains server-side conversation history across turns via `AgentSession`
 
 ## Key Concepts
 
-The Agent Framework's `AIAgent` + `AgentSession` model abstracts away the underlying thread/run polling loop. Instead of manually checking run status and submitting tool outputs, you register function implementations once and call `RunAsync`:
+The Agent Framework abstracts away the underlying thread/run polling loop, including the `requires_action` cycle that `PizzaBot.UseExistingAgent` handles manually. You register function implementations once when connecting to the agent, then each conversation turn is a single `RunAsync` call:
 
 ```csharp
-// Register the local function implementation — no manual dispatch loop needed
-AIFunction pizzaCalcFunction = AIFunctionFactory.Create(PizzaCalculator.CalculateNumberOfPizzasToOrder);
+// Register the local function — the framework handles dispatch automatically
+AITool tool = AIFunctionFactory.Create(PizzaCalculator.CalculateNumberOfPizzasToOrder);
 
-ChatClientAgentRunOptions runOptions = new()
-{
-    ChatOptions = new()
-    {
-        Tools = [pizzaCalcFunction],
-        RawRepresentationFactory = (_) => new ThreadAndRunOptions()
-        {
-            ToolResources = new MCPToolResource(serverLabel: "contoso-pizza-mcp")
-            {
-                RequireApproval = new MCPApproval("never"),
-            }.ToToolResources()
-        }
-    }
-};
+// Connect to the existing agent and attach the function implementation
+ChatClientAgent agent = await aiProjectClient.GetAIAgentAsync(agentName, tools: [tool]);
 
-AgentResponse response = await agent.RunAsync(userInput, session, runOptions);
+AgentSession session = await agent.CreateSessionAsync();
+
+// Each turn is one call — no tool call/response loop needed
+AgentResponse response = await agent.RunAsync(userInput, session);
 ```
 
 ## Running the Sample
@@ -49,7 +37,7 @@ AgentResponse response = await agent.RunAsync(userInput, session, runOptions);
 dotnet run
 ```
 
-The agent will be created in Foundry on first run, then reused on subsequent runs.
+The target agent (`ContosoPizzaBot` by default) must already exist in your Foundry project. Run `PizzaBot.CreateFoundryAgent` first if you haven't set it up yet.
 
 ## Configuration
 
@@ -64,7 +52,7 @@ Settings are loaded in this priority order (highest wins):
 | Key | Value |
 |---|---|
 | `PizzaBot:ModelDeploymentName` | `gpt-4o` |
-| `PizzaBot:AgentName` | `ContosoPizzaBotWithAgentFramework` |
+| `PizzaBot:AgentName` | `ContosoPizzaBot` |
 | `PizzaBot:McpServerUri` | Contoso MCP server (public endpoint from the workshop) |
 
 ### You must supply
@@ -92,34 +80,28 @@ PizzaBot__VectorStoreId=vs_...
 
 | Library | Description | Docs |
 |---|---|---|
-| `Microsoft.Agents.AI.AzureAI.Persistent` | Microsoft Agent Framework — high-level abstractions for building, orchestrating, and deploying AI agents backed by the Foundry Persistent Agents service | [Learn](https://learn.microsoft.com/agent-framework/overview/agent-framework-overview) |
+| `Microsoft.Agents.AI.AzureAI` | Microsoft Agent Framework — high-level abstractions for building and orchestrating AI agents, with automatic function dispatch and session management | [Learn](https://learn.microsoft.com/agent-framework/overview/agent-framework-overview) |
 | `Azure.Identity` | Passwordless authentication to Azure services via `DefaultAzureCredential` | [Learn](https://learn.microsoft.com/en-us/dotnet/api/overview/azure/identity-readme) |
 | `Microsoft.Extensions.Configuration` | Standard .NET configuration stack supporting JSON files, environment variables, and user secrets | [Learn](https://learn.microsoft.com/en-us/dotnet/core/extensions/configuration) |
 
 ## Remarks
 
-### Persistent Agents vs. Agent Versions — Two Different APIs
+### How This Fits With the Other Samples
 
-Azure AI Foundry exposes **two distinct agent systems**, and the SDK you choose determines which one you use:
-
-- **`Azure.AI.Projects`** (used in `PizzaBot.CreateFoundryAgent` and `PizzaBot.UseExistingAgent`) targets the **Agent Versions API** — a newer system built on the Responses API. Agents created here appear as versioned Agent Versions in the Foundry portal.
-
-- **`Microsoft.Agents.AI.AzureAI.Persistent`** (this project) targets the **Persistent Agents API** — an earlier system modeled after the OpenAI Assistants API, using a thread/run model. Agents created here appear under the Agents section of the Foundry portal.
-
-These are separate namespaces in the portal. **An agent created by this project cannot be used by `PizzaBot.UseExistingAgent`**, and vice versa.
+All three projects in this repo work with the **same agent definition**. `PizzaBot.CreateFoundryAgent` creates (or updates) the agent in Azure AI Foundry. `PizzaBot.UseExistingAgent` connects to it and drives a conversation, but still has to handle the function call loop manually — inspecting each response for `FunctionCallResponseItem`, executing the function, and submitting the result back. This project does the same connect-and-converse pattern but hands function dispatch off to the Agent Framework, which is why the conversation loop is so much simpler.
 
 ### Automatic Function Tool Dispatch
 
-The Agent Framework eliminates the manual "requires_action" polling loop. When the model decides to call `CalculateNumberOfPizzasToOrder`, the framework:
+The Agent Framework eliminates the manual `requires_action` loop that `PizzaBot.UseExistingAgent` handles explicitly. When the model decides to call `CalculateNumberOfPizzasToOrder`, the framework:
 
 1. Intercepts the tool call request from the Foundry run
-2. Matches it to the `AIFunction` registered in `ChatOptions.Tools`
+2. Matches it to the `AITool` registered via `GetAIAgentAsync`
 3. Executes the function locally
 4. Submits the result back to Foundry and continues the run
 
-This means the pizza calculator **always runs locally** — even though it is declared in the agent definition stored in Foundry, the C# code here must be running for it to work.
+All of this happens inside `RunAsync` — the conversation loop never sees it. The pizza calculator **always runs locally** — even though its schema is declared in the agent definition stored in Foundry, the C# code here must be running for it to work.
 
 ### Verifying the Agent in the Portal
 
-After the first run, you can view the agent in the [Azure AI Foundry portal](https://ai.azure.com). Navigate to your project, then look under **Agents** (the Persistent Agents section) and find `ContosoPizzaBotWithAgentFramework`. Its tool definitions — file search, MCP, and the pizza calculator schema — will be listed there.
+The same agent used by `PizzaBot.CreateFoundryAgent` and `PizzaBot.UseExistingAgent` is used here. You can view it in the [Azure AI Foundry portal](https://ai.azure.com) under **Agents** in your project — its tool definitions (file search, MCP, and the pizza calculator schema) will be listed there.
 

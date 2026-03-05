@@ -11,7 +11,7 @@ The workshop takes you from zero to a fully working pizza ordering assistant, st
 
 These samples translate every concept from the original Python workshop into idiomatic C# and .NET, so you can follow along or use them as a reference without leaving the .NET ecosystem.
 
-> **Note:** This is not a chapter-by-chapter port of the workshop. A step-by-step C# equivalent of the workshop is planned for the future. Instead, `PizzaBot.CreateFoundryAgent` implements the same end goal as the workshop — a fully configured agent with system prompts, RAG, a custom tool, and MCP — in a single project. `PizzaBot.UseExistingAgent` then demonstrates how to connect to and use that hosted agent from a separate application.
+> **Note:** This is not a chapter-by-chapter port of the workshop. A step-by-step C# equivalent of the workshop is planned for the future. Instead, `PizzaBot.CreateFoundryAgent` implements the same end goal as the workshop — a fully configured agent with system prompts, RAG, a custom tool, and MCP — in a single project. `PizzaBot.UseExistingAgent` then demonstrates how to connect to that same agent from a separate application, keeping agent configuration and execution decoupled. `PizzaBot.AgentFramework` takes the same connect-and-converse approach but uses the Microsoft Agent Framework to eliminate all client-side function call handling code, showing how the conversation loop simplifies as you move up the abstraction stack.
 
 ## Original Workshop
 
@@ -25,7 +25,7 @@ The workshop is the authoritative guide for what each concept means and why it m
 |---|---|---|
 | [PizzaBot.CreateFoundryAgent](src/PizzaBot.CreateFoundryAgent/) | `Azure.AI.Projects` | Full-featured agent with system prompts, RAG (file search), a custom tool, and MCP integration |
 | [PizzaBot.UseExistingAgent](src/PizzaBot.UseExistingAgent/) | `Azure.AI.Projects` | Connecting to an already-provisioned Foundry agent rather than creating a new one |
-| [PizzaBot.AgentFramework](src/PizzaBot.AgentFramework/) | `Microsoft.Agents.AI` | Same full-featured agent built using the Microsoft Agent Framework and Foundry's Persistent Agents API |
+| [PizzaBot.AgentFramework](src/PizzaBot.AgentFramework/) | `Microsoft.Agents.AI` | Connects to an existing Foundry persistent agent using the Microsoft Agent Framework; automatic function dispatch eliminates all client-side tool call handling code |
 
 Each project has its own README explaining what it demonstrates and how to configure it.
 
