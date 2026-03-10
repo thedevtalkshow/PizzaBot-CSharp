@@ -1,0 +1,56 @@
+@PizzaApi_HostAddress = http://localhost:7071
+
+GET {{PizzaApi_HostAddress}}/api/
+Accept: application/json
+
+###
+
+GET {{PizzaApi_HostAddress}}/api/pizzas
+Accept: application/json
+
+###
+
+GET {{PizzaApi_HostAddress}}/api/pizzas/2
+Accept: application/json
+
+###
+
+GET {{PizzaApi_HostAddress}}/api/toppings
+Accept: application/json
+
+###
+
+GET {{PizzaApi_HostAddress}}/api/toppings/categories
+Accept: application/json
+
+###
+
+GET {{PizzaApi_HostAddress}}/api/toppings/2
+Accept: application/json
+
+###
+
+GET {{PizzaApi_HostAddress}}/api/orders
+Accept: application/json
+
+###
+
+GET {{PizzaApi_HostAddress}}/api/orders/1773118561228
+Accept: application/json
+
+###
+
+POST {{PizzaApi_HostAddress}}/api/orders
+Content-Type: application/json
+Accept: application/json
+
+{
+  "userId": "2345",
+  "items": [
+    {
+      "pizzaId": "1",
+      "quantity": 2
+    }
+  ],
+  "nickname": "Chris"
+}

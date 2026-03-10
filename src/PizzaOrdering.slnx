@@ -1,4 +1,8 @@
 <Solution>
+  <Folder Name="/Backend/">
+    <Project Path="PizzaApi/PizzaApi.csproj" />
+    <Project Path="Shared/Shared.csproj" />
+  </Folder>
   <Project Path="PizzaBot.AgentFramework/PizzaBot.AgentFramework.csproj" />
   <Project Path="PizzaBot.CreateFoundryAgent/PizzaBot.CreateFoundryAgent.csproj" />
   <Project Path="PizzaBot.UseExistingAgent/PizzaBot.UseExistingAgent.csproj" />
