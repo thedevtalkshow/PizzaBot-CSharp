@@ -23,9 +23,10 @@ The workshop is the authoritative guide for what each concept means and why it m
 
 | Project | SDK | What it demonstrates |
 |---|---|---|
+| [PizzaApi](src/PizzaApi/) | `Microsoft.AspNetCore` | Local REST API for the Contoso Pizza ordering backend — the same API the workshop's hosted MCP server wraps |
 | [PizzaBot.CreateFoundryAgent](src/PizzaBot.CreateFoundryAgent/) | `Azure.AI.Projects` | Full-featured agent with system prompts, RAG (file search), a custom tool, and MCP integration |
 | [PizzaBot.UseExistingAgent](src/PizzaBot.UseExistingAgent/) | `Azure.AI.Projects` | Connecting to an already-provisioned Foundry agent rather than creating a new one |
-| [PizzaBot.AgentFramework](src/PizzaBot.AgentFramework/) | `Microsoft.Agents.AI` | Connects to an existing Foundry persistent agent using the Microsoft Agent Framework; automatic function dispatch eliminates all client-side tool call handling code |
+| [PizzaBot.AgentFramework](src/PizzaBot.AgentFramework/) | `Microsoft.Agents.AI` | Same full-featured agent built using the Microsoft Agent Framework and Foundry's Persistent Agents API |
 
 Each project has its own README explaining what it demonstrates and how to configure it.
 

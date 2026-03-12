@@ -33,16 +33,15 @@ When the agent invokes the pizza calculator, the client-side loop intercepts the
 
 ## Running the Sample
 
-1. Configure your project endpoint and other settings — use user secrets, environment variables, or `appsettings.json` (see below).
-2. Replace the vector store ID with your own, or remove the `FileSearchTool` if you don't have one set up.
-3. Update the MCP server URI to your own server, or remove that tool.
-4. Customize `instructions.txt` as needed.
-5. Authenticate using the Azure CLI (`az login`) or another `DefaultAzureCredential`-compatible method.
-6. Run with:
+1. Set your `ProjectEndpoint` and `VectorStoreId` via user secrets (see Configuration below).
+2. Authenticate using the Azure CLI: `az login`
+3. Run with:
 
 ```bash
 dotnet run
 ```
+
+The MCP server URI and agent name are already configured in `appsettings.json` and point to the workshop's shared Contoso Pizza backend — no changes needed there to get started.
 
 ## Configuration
 
