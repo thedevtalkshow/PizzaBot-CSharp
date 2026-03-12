@@ -1,4 +1,4 @@
-using McpServer.Tools;
+using PizzaMcpServer.Tools;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;

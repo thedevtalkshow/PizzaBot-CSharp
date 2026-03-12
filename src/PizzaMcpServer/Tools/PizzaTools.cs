@@ -2,7 +2,7 @@
 using System.ComponentModel;
 using System.Net.Http.Json;
 
-namespace McpServer.Tools
+namespace PizzaMcpServer.Tools
 {
     [McpServerToolType]
     internal class PizzaTools(IHttpClientFactory httpClientFactory)

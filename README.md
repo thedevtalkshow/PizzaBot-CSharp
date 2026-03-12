@@ -24,6 +24,7 @@ The workshop is the authoritative guide for what each concept means and why it m
 | Project | SDK | What it demonstrates |
 |---|---|---|
 | [PizzaApi](src/PizzaApi/) | `Microsoft.AspNetCore` | Local REST API for the Contoso Pizza ordering backend — the same API the workshop's hosted MCP server wraps |
+| [PizzaMcpServer](src/PizzaMcpServer/) | `ModelContextProtocol.AspNetCore` | Local MCP server wrapping the Pizza API — connects to GitHub Copilot, Claude, or an Azure AI Foundry agent |
 | [PizzaBot.CreateFoundryAgent](src/PizzaBot.CreateFoundryAgent/) | `Azure.AI.Projects` | Full-featured agent with system prompts, RAG (file search), a custom tool, and MCP integration |
 | [PizzaBot.UseExistingAgent](src/PizzaBot.UseExistingAgent/) | `Azure.AI.Projects` | Connecting to an already-provisioned Foundry agent rather than creating a new one |
 | [PizzaBot.AgentFramework](src/PizzaBot.AgentFramework/) | `Microsoft.Agents.AI` | Same full-featured agent built using the Microsoft Agent Framework and Foundry's Persistent Agents API |
@@ -56,3 +57,9 @@ Follow the **Welcome & Setup** section of the [workshop](https://jolly-field-035
 3. Set your Foundry project endpoint and vector store ID via `dotnet user-secrets` (details in each project's README).
 4. Authenticate with Azure: `az login`
 5. Run from the project directory: `dotnet run`
+
+## Additional Guides
+
+| Guide | Description |
+|-------|-------------|
+| [Running the full local stack](docs/local-stack.md) | Run PizzaApi and PizzaMcpServer locally and point a Foundry agent or GitHub Copilot at them |
