@@ -84,7 +84,7 @@ In `src/PizzaBot.CreateFoundryAgent/appsettings.json`, update the MCP server URI
 ```json
 {
   "PizzaBot": {
-    "McpServerUri": "https://<your-tunnel-url>/mcp/sse"
+    "McpServerUri": "https://<your-tunnel-url>/mcp"
   }
 }
 ```
@@ -93,10 +93,10 @@ Or set it via user secrets to avoid committing the URL:
 
 ```bash
 cd src/PizzaBot.CreateFoundryAgent
-dotnet user-secrets set "PizzaBot:McpServerUri" "https://<your-tunnel-url>/mcp/sse"
+dotnet user-secrets set "PizzaBot:McpServerUri" "https://<your-tunnel-url>/mcp"
 ```
 
-> The SSE endpoint (`/mcp/sse`) is what Azure AI Foundry uses. The Streamable HTTP endpoint (`/mcp`) is for Copilot and Claude.
+> Use `/mcp` (Streamable HTTP) — Azure AI Foundry now supports the modern MCP transport. The legacy SSE endpoint (`/mcp/sse`) still works as a fallback if needed.
 
 ## Step 6 — Run the agent
 
