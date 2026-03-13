@@ -3,7 +3,7 @@
   "servers": {
     "PizzaBot MCP": {
       "type": "http",
-      "url": "http://localhost:5000/mcp",
+      "url": "https://62a8-71-162-245-149.ngrok-free.app/mcp",
       "headers": {}
     }
   }

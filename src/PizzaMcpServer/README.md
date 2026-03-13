@@ -20,10 +20,14 @@ The MCP server listens on **`http://localhost:3000`**.
 
 ## Transport Endpoints
 
+`MapMcp("/mcp")` automatically registers both transports:
+
 | Transport | URL | Used by |
 |-----------|-----|---------|
-| Streamable HTTP | `http://localhost:3000/mcp` | MCP Inspector, GitHub Copilot, Claude |
-| SSE (legacy) | `http://localhost:3000/mcp/sse` | Azure AI Foundry SDK |
+| Streamable HTTP | `http://localhost:3000/mcp` | Azure AI Foundry, GitHub Copilot, Claude |
+| SSE (legacy) | `http://localhost:3000/mcp/sse` | Older clients — fallback only |
+
+Use `/mcp` for everything. The SSE endpoint is there if you hit an older client that requires it.
 
 ## Available Tools
 
