@@ -65,7 +65,7 @@ Azure AI Foundry calls the MCP server from the cloud, so localhost won't work. E
 
 1. In VS Code: **View → Ports → Forward a Port → 3000 → set visibility to Public**
 2. Use the public HTTPS URL as `McpServerUri` in `appsettings.json` for `PizzaBot.CreateFoundryAgent`
-3. The SSE endpoint is `https://<tunnel-url>/mcp/sse`
+3. The MCP endpoint is `https://<tunnel-url>/mcp`
 
 ## Libraries
 
