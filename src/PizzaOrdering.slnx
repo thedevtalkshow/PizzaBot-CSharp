@@ -8,4 +8,6 @@
   <Project Path="PizzaBot.CreateFoundryAgent/PizzaBot.CreateFoundryAgent.csproj" />
   <Project Path="PizzaBot.UseExistingAgent/PizzaBot.UseExistingAgent.csproj" />
   <Project Path="PizzaBot.Dashboard/PizzaBot.Dashboard.csproj" />
+  <Project Path="PizzaOrdering.AppHost/PizzaOrdering.AppHost.csproj" />
+  <Project Path="PizzaOrdering.ServiceDefaults/PizzaOrdering.ServiceDefaults.csproj" />
 </Solution>
