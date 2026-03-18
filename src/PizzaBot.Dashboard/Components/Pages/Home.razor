@@ -1,0 +1,111 @@
+@page "/"
+@rendermode InteractiveServer
+@using Shared.Models
+@using PizzaBot.Dashboard.Services
+@inject OrdersService OrdersService
+@implements IDisposable
+
+<PageTitle>Pizza Dashboard</PageTitle>
+
+<div class="dashboard">
+    <h1>🍕 Contoso Pizza Dashboard</h1>
+
+    @if (_error != null)
+    {
+        <div class="error-banner">⚠️ Could not reach the Pizza API: @_error</div>
+    }
+
+    @if (_status != null)
+    {
+        <div class="stats">
+            <span class="stat">Active Orders: <strong>@_status.ActiveOrders</strong></span>
+            <span class="stat">Total Orders: <strong>@_status.TotalOrders</strong></span>
+        </div>
+    }
+    <div class="refresh-info">Auto-refreshes every 10s · Last updated: @_lastUpdated.ToString("HH:mm:ss")</div>
+
+    @if (_orders.Count == 0)
+    {
+        <div class="empty-state"><p>No orders yet.</p></div>
+    }
+    else
+    {
+        <table class="orders-table">
+            <thead>
+                <tr>
+                    <th>Order</th>
+                    <th>Status</th>
+                    <th>Items</th>
+                    <th>Total</th>
+                    <th>Created</th>
+                    <th>Est. Ready</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var order in _orders.OrderByDescending(o => o.CreatedAt))
+                {
+                    <tr>
+                        <td class="order-id">
+                            @(string.IsNullOrEmpty(order.Nickname)
+                                ? order.Id[..Math.Min(8, order.Id.Length)]
+                                : order.Nickname[..Math.Min(8, order.Nickname.Length)])
+                        </td>
+                        <td><span class="status-badge status-@order.Status">@order.Status</span></td>
+                        <td>@order.Items.Sum(i => i.Quantity) pizza(s)</td>
+                        <td>$@order.TotalPrice.ToString("F2")</td>
+                        <td>@FormatTime(order.CreatedAt)</td>
+                        <td>@FormatTime(order.EstimatedCompletionAt)</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    }
+</div>
+
+@code {
+    private List<OrderResponse> _orders = [];
+    private StatusResponse? _status;
+    private string? _error;
+    private DateTime _lastUpdated = DateTime.Now;
+    private Timer? _timer;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadDataAsync();
+    }
+
+    protected override void OnAfterRender(bool firstRender)
+    {
+        if (firstRender)
+        {
+            _timer = new Timer(async _ =>
+            {
+                await LoadDataAsync();
+                await InvokeAsync(StateHasChanged);
+            }, null, TimeSpan.FromSeconds(10), TimeSpan.FromSeconds(10));
+        }
+    }
+
+    private async Task LoadDataAsync()
+    {
+        try
+        {
+            _orders = await OrdersService.GetOrdersAsync();
+            _status = await OrdersService.GetStatusAsync();
+            _error = null;
+        }
+        catch (Exception ex)
+        {
+            _error = ex.Message;
+        }
+        _lastUpdated = DateTime.Now;
+    }
+
+    private static string FormatTime(string? isoTime)
+    {
+        if (string.IsNullOrEmpty(isoTime)) return "-";
+        return DateTime.TryParse(isoTime, out var dt) ? dt.ToLocalTime().ToString("HH:mm:ss") : isoTime;
+    }
+
+    public void Dispose() => _timer?.Dispose();
+}
