@@ -37,4 +37,8 @@
 	<PackageReference Include="ModelContextProtocol.AspNetCore" Version="1.1.0" />
   </ItemGroup>
 
+  <ItemGroup>
+    <ProjectReference Include="..\PizzaOrdering.ServiceDefaults\PizzaOrdering.ServiceDefaults.csproj" />
+  </ItemGroup>
+
 </Project>
