@@ -7,31 +7,39 @@ using Azure.AI.Agents.Persistent;
 using Azure.AI.Projects;
 using Azure.Identity;
 
+// Usage: dotnet run KnowledgeUpload.cs <project-endpoint> [knowledge-folder]
+// Example: dotnet run KnowledgeUpload.cs https://<resource>.services.ai.azure.com/api/projects/<project>
+
+if (args.Length == 0)
+{
+    Console.WriteLine("Usage: dotnet run KnowledgeUpload.cs <project-endpoint> [knowledge-folder]");
+    Console.WriteLine("  project-endpoint  Your Azure AI Foundry project endpoint URL");
+    Console.WriteLine("  knowledge-folder  Path to the folder containing knowledge docs (default: ../knowledge)");
+    return;
+}
+
+string projectEndpoint = args[0];
+string folderPath = args.Length > 1 ? args[1] : "../knowledge";
+
 // Create the Foundry Project Client
 AIProjectClient projectClient = new AIProjectClient(
-    new Uri("https://pizzabot-002-resource.services.ai.azure.com/api/projects/pizzabot-002"),
+    new Uri(projectEndpoint),
     new DefaultAzureCredential()
 );
 
 // Get the Persistent Agents Client
 PersistentAgentsClient agentsClient = projectClient.GetPersistentAgentsClient();
 
-// verify the folder exists
-string folderPath = args.Length > 0 ? args[1] : "../knowledge";
-
 if (!Directory.Exists(folderPath))
 {
-    string errorMessage = $""""
-    Documents folder not found at {folderPath}.
-    Create it and add your "Contoso Pizza" files (PDF, TXT, MD, etc.).
-    """";
-    Console.WriteLine(errorMessage);
+    Console.WriteLine($"Documents folder not found at {folderPath}.");
+    Console.WriteLine("Create it and add your Contoso Pizza files (PDF, TXT, MD, etc.).");
     return;
 }
 
 List<string> uploadedFileIds = new();
 
-// upload each file in the documents folder
+// Upload each file in the knowledge folder
 foreach (string filePath in Directory.GetFiles(folderPath))
 {
     string fileName = Path.GetFileName(filePath);
@@ -43,10 +51,11 @@ foreach (string filePath in Directory.GetFiles(folderPath))
 
 Console.WriteLine("File upload complete.");
 
-// create a vector store
+// Create a vector store from the uploaded files
 PersistentAgentsVectorStore vectorStore = agentsClient.VectorStores.CreateVectorStore(
     name: "contoso-pizza-store-information",
     fileIds: uploadedFileIds
 );
 
 Console.WriteLine($"Created vector store with ID: {vectorStore.Id}");
+Console.WriteLine($"Set this as PizzaBot:VectorStoreId in your user secrets.");
