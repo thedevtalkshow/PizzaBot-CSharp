@@ -1,0 +1,17 @@
+[
+  {
+    "Name": "API/MCP",
+    "Projects": [
+      {
+        "Path": "PizzaApi\\PizzaApi.csproj",
+        "Action": "Start",
+        "DebugTarget": "http"
+      },
+      {
+        "Path": "PizzaMcpServer\\PizzaMcpServer.csproj",
+        "Action": "Start",
+        "DebugTarget": "https"
+      }
+    ]
+  }
+]
