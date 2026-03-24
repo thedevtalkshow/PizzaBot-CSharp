@@ -1,0 +1,24 @@
+@inherits LayoutComponentBase
+
+<div class="consumer-app">
+    <header class="app-header">
+        <div class="header-brand">
+            <span class="brand-icon">🍕</span>
+            <span class="brand-name">Contoso Pizza</span>
+        </div>
+        <nav class="header-nav">
+            <a href="/" class="nav-link">Order</a>
+            <a href="/orders" class="nav-link">My Orders</a>
+        </nav>
+    </header>
+
+    <main class="app-main">
+        @Body
+    </main>
+</div>
+
+<div id="blazor-error-ui" data-nosnippet>
+    An unhandled error has occurred.
+    <a href="." class="reload">Reload</a>
+    <span class="dismiss">🗙</span>
+</div>

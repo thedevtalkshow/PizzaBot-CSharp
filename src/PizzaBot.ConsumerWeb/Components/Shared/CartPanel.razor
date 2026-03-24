@@ -1,0 +1,169 @@
+@rendermode InteractiveServer
+@inject PizzaApiService PizzaApi
+@implements IAsyncDisposable
+
+<div class="cart-container">
+    <div class="cart-header">
+        <h2>🛒 Your Orders</h2>
+        @if (_loading)
+        {
+            <span class="loading-dot">●</span>
+        }
+    </div>
+
+    @if (_orders.Count == 0 && !_loading)
+    {
+        <div class="cart-empty">
+            <div class="empty-icon">🍕</div>
+            <p>No orders yet — just ask Lisa to order some pizza!</p>
+        </div>
+    }
+    else
+    {
+        <div class="orders-list">
+            @foreach (var order in _orders)
+            {
+                <div class="order-card @GetStatusClass(order.Status)">
+                    <div class="order-card-header">
+                        <span class="order-id">Order #@order.Id[..8]</span>
+                        <span class="order-status @GetStatusClass(order.Status)">@GetStatusLabel(order.Status)</span>
+                    </div>
+
+                    <div class="order-items">
+                        @foreach (var item in order.Items ?? [])
+                        {
+                            var pizza = GetPizza(item.PizzaId);
+                            <div class="order-item">
+                                @if (pizza?.ImageUrl is not null)
+                                {
+                                    <img src="@pizza.ImageUrl" alt="@pizza.Name" class="pizza-thumb" />
+                                }
+                                else
+                                {
+                                    <div class="pizza-thumb-placeholder">🍕</div>
+                                }
+                                <div class="item-details">
+                                    <span class="item-name">@(pizza?.Name ?? item.PizzaId)</span>
+                                    @if (item.ExtraToppingIds?.Count > 0)
+                                    {
+                                        <span class="item-extras">+ @item.ExtraToppingIds.Count extra topping(s)</span>
+                                    }
+                                    <span class="item-qty">× @item.Quantity</span>
+                                </div>
+                            </div>
+                        }
+                    </div>
+
+                    <div class="order-footer">
+                        <span class="order-total">$@order.TotalPrice.ToString("F2")</span>
+                        <span class="order-eta">
+                            @if (order.Status is "pending" or "in_preparation")
+                            {
+                                @($"Est. ready: {GetEtaMinutes(order.EstimatedCompletionAt)}")
+                            }
+                        </span>
+                    </div>
+                </div>
+            }
+        </div>
+    }
+</div>
+
+@code {
+    [Parameter, EditorRequired] public string UserId { get; set; } = default!;
+
+    private List<OrderResponse> _orders = [];
+    private Dictionary<string, Pizza> _pizzaCache = [];
+    private bool _loading = true;
+    private PeriodicTimer? _timer;
+    private CancellationTokenSource? _cts;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadPizzasAsync();
+        await RefreshOrdersAsync();
+
+        _cts = new CancellationTokenSource();
+        _timer = new PeriodicTimer(TimeSpan.FromSeconds(5));
+
+        _ = Task.Run(async () =>
+        {
+            try
+            {
+                while (await _timer.WaitForNextTickAsync(_cts.Token))
+                {
+                    await RefreshOrdersAsync();
+                    await InvokeAsync(StateHasChanged);
+                }
+            }
+            catch (OperationCanceledException) { }
+        });
+    }
+
+    private async Task LoadPizzasAsync()
+    {
+        try
+        {
+            var pizzas = await PizzaApi.GetPizzasAsync();
+            _pizzaCache = pizzas.ToDictionary(p => p.Id);
+        }
+        catch { /* Pizza API might not be running yet */ }
+    }
+
+    private async Task RefreshOrdersAsync()
+    {
+        try
+        {
+            _loading = true;
+            _orders = await PizzaApi.GetOrdersAsync(UserId);
+            // Most recent first
+            _orders = [.. _orders.OrderByDescending(o => o.CreatedAt)];
+        }
+        catch { /* silently ignore — API might not be running */ }
+        finally
+        {
+            _loading = false;
+        }
+    }
+
+    private Pizza? GetPizza(string pizzaId) =>
+        _pizzaCache.TryGetValue(pizzaId, out var p) ? p : null;
+
+    private static string GetStatusClass(string? status) => status switch
+    {
+        "pending" => "status-pending",
+        "in_preparation" => "status-preparing",
+        "ready" => "status-ready",
+        "delivered" => "status-delivered",
+        "cancelled" => "status-cancelled",
+        _ => ""
+    };
+
+    private static string GetStatusLabel(string? status) => status switch
+    {
+        "pending" => "⏳ Pending",
+        "in_preparation" => "👨‍🍳 Preparing",
+        "ready" => "✅ Ready!",
+        "delivered" => "🚗 Delivered",
+        "cancelled" => "❌ Cancelled",
+        _ => status ?? "Unknown"
+    };
+
+    private static string GetEtaMinutes(string? isoTime)
+    {
+        if (!DateTime.TryParse(isoTime, null, System.Globalization.DateTimeStyles.RoundtripKind, out var eta))
+            return string.Empty;
+
+        var remaining = eta - DateTime.UtcNow;
+        if (remaining <= TimeSpan.Zero) return "any moment now";
+        return remaining.TotalMinutes < 1 ? "< 1 min" : $"~{(int)remaining.TotalMinutes} min";
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        _cts?.Cancel();
+        _timer?.Dispose();
+        _cts?.Dispose();
+        await Task.CompletedTask;
+    }
+}
