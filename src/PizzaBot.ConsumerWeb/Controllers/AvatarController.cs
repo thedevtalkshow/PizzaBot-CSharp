@@ -101,6 +101,10 @@ public class AvatarController(
 
         await DisconnectAvatarInternal(clientId, isReconnecting);
 
+        // Initialize the Foundry agent session on first connect (not on reconnects, to preserve conversation history)
+        if (!isReconnecting)
+            agentService.InitializeSession(clientId, clientId.ToString("N"));
+
         ctx.TtsVoice = Request.Headers["TtsVoice"].FirstOrDefault() ?? _settings.TtsVoice;
         ctx.CustomVoiceEndpointId = Request.Headers["CustomVoiceEndpointId"].FirstOrDefault();
         ctx.PersonalVoiceSpeakerProfileId = Request.Headers["PersonalVoiceSpeakerProfileId"].FirstOrDefault();
