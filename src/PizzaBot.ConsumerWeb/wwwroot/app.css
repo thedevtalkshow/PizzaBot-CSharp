@@ -340,6 +340,7 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
 }
 
 .order-id { font-family: monospace; font-size: 0.8rem; color: var(--pizza-muted); }
+.order-nickname { font-size: 0.8rem; color: var(--pizza-text); font-style: italic; margin-bottom: 0.4rem; opacity: 0.8; }
 .order-status { font-size: 0.8rem; font-weight: 600; }
 .order-status.status-pending  { color: var(--pizza-orange); }
 .order-status.status-preparing { color: #60a5fa; }

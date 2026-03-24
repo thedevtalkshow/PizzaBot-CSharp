@@ -38,6 +38,10 @@
                         <span class="order-id">Order #@order.Id[..8]</span>
                         <span class="order-status @GetStatusClass(order.Status)">@GetStatusLabel(order.Status)</span>
                     </div>
+                    @if (!string.IsNullOrWhiteSpace(order.Nickname))
+                    {
+                        <div class="order-nickname">"@order.Nickname"</div>
+                    }
 
                     <div class="order-items">
                         @foreach (var item in order.Items ?? [])
