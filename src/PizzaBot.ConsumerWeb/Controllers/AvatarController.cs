@@ -54,15 +54,6 @@ public class AvatarController(
 
     // ── Session lifecycle ──────────────────────────────────────────────────────
 
-    [HttpGet("api/initializeClient")]
-    public IActionResult InitializeClient()
-    {
-        var clientId = clientService.InitializeClient();
-        // Initialize the Foundry agent session — use the clientId as the ordering userId
-        agentService.InitializeSession(clientId, clientId.ToString("N"));
-        return Ok(new { ClientId = clientId });
-    }
-
     [HttpGet("api/getStatus")]
     public IActionResult GetStatus()
     {
@@ -279,16 +270,6 @@ public class AvatarController(
         return Ok("Request sent.");
     }
 
-    [HttpPost("api/chat/clearHistory")]
-    public IActionResult ClearChatHistory()
-    {
-        if (!TryGetClientId(out var clientId)) return BadRequest("Invalid ClientId");
-        // Re-initialize the agent session to clear conversation history
-        agentService.RemoveSession(clientId);
-        agentService.InitializeSession(clientId, clientId.ToString("N"));
-        return Ok("Chat history cleared.");
-    }
-
     [HttpPost("api/speak")]
     public async Task<IActionResult> Speak()
     {
@@ -378,7 +359,6 @@ public class AvatarController(
                         ctx.SpeakingText = current;
                         ctx.SpokenTextQueue.RemoveFirst();
                         await SpeakText(current, ctx.TtsVoice, ctx.PersonalVoiceSpeakerProfileId ?? string.Empty, endingSilenceMs, clientId);
-                        ctx.LastSpeakTime = DateTime.UtcNow;
                     }
                 }
                 finally

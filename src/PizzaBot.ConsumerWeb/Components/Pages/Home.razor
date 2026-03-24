@@ -24,7 +24,7 @@
         <input type="hidden" id="backgroundColor" value="@settings.BackgroundColor" />
         <input type="hidden" id="isCustomAvatar" value="false" />
         <input type="hidden" id="isPhotoAvatar" value="false" />
-        <input type="hidden" id="transparentBackground" value="false" />
+        <input type="hidden" id="transparentBackground" value="true" />
         <input type="hidden" id="videoCrop" value="false" />
 
         <!-- Avatar video -->
@@ -67,6 +67,9 @@
         <div id="overlayArea" class="overlay-area"></div>
     </div>
 
+    <!-- ── Drag Splitter ───────────────────────────────────────────── -->
+    <div class="splitter" id="panelSplitter"></div>
+
     <!-- ── Live Orders Panel ───────────────────────────────────────── -->
     <div class="cart-panel">
         <CartPanel />
@@ -80,8 +83,6 @@
 -->
 <div id="configuration" hidden></div>
 <textarea id="latencyLog" hidden></textarea>
-<div id="showTypeMessageCheckbox" hidden></div>
-<div id="cogSearchConfig" hidden></div>
 <audio id="audioPlayer" hidden></audio>
 
 <!-- Feature flags: hardcoded to sensible defaults for the pizza chat experience -->
@@ -89,17 +90,13 @@
 <input type="checkbox" id="autoReconnectAvatar" hidden />
 <input type="checkbox" id="photoAvatar" hidden />
 <input type="checkbox" id="customizedAvatar" hidden />
-<input type="checkbox" id="enableOyd" hidden />
 <input type="checkbox" id="continuousConversation" hidden checked />
 <input type="checkbox" id="showTypeMessage" hidden checked />
 
 <!-- Config values: empty overrides (handled server-side via Foundry agent) -->
 <input type="hidden" id="sttLocales" value="en-US" />
-<input type="hidden" id="azureOpenAIDeploymentName" value="" />
-<input type="hidden" id="azureCogSearchIndexName" value="" />
 <input type="hidden" id="customVoiceEndpointId" value="" />
 <input type="hidden" id="personalVoiceSpeakerProfileID" value="" />
-<textarea id="prompt" hidden></textarea>
 
 <script src="js/chat.js"></script>
 <script>
@@ -139,5 +136,39 @@
             window.handleUserQuery(text);
         }
     };
+
+    // ── Panel splitter drag logic ────────────────────────────────────
+    (function () {
+        const splitter = document.getElementById('panelSplitter');
+        const layout = splitter?.closest('.consumer-layout');
+        if (!splitter || !layout) return;
+
+        let dragging = false;
+
+        splitter.addEventListener('mousedown', e => {
+            dragging = true;
+            splitter.classList.add('dragging');
+            document.body.style.cursor = 'col-resize';
+            document.body.style.userSelect = 'none';
+            e.preventDefault();
+        });
+
+        document.addEventListener('mousemove', e => {
+            if (!dragging) return;
+            const rect = layout.getBoundingClientRect();
+            // Clamp: avatar panel min 35%, max 80% of total width
+            const avatarPx = Math.min(Math.max(e.clientX - rect.left, rect.width * 0.35), rect.width * 0.80);
+            const ordersPx = rect.width - avatarPx - 8; // 8px = splitter width
+            layout.style.gridTemplateColumns = `${avatarPx}px 8px ${ordersPx}px`;
+        });
+
+        document.addEventListener('mouseup', () => {
+            if (!dragging) return;
+            dragging = false;
+            splitter.classList.remove('dragging');
+            document.body.style.cursor = '';
+            document.body.style.userSelect = '';
+        });
+    })();
 </script>
 

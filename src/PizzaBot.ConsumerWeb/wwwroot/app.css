@@ -102,28 +102,37 @@ html, body {
 
 .brand-icon { font-size: 1.6rem; }
 
-.header-nav { display: flex; gap: 1rem; }
-.header-nav .nav-link {
-    color: var(--pizza-light);
-    text-decoration: none;
-    padding: 0.4rem 1rem;
-    border-radius: 20px;
-    transition: background 0.2s;
-}
-.header-nav .nav-link:hover { background: var(--pizza-border); }
-
 /* ── Main Layout ────────────────────────────────────────────────── */
 .app-main { height: calc(100vh - 60px); overflow: hidden; }
 
 .consumer-layout {
     display: grid;
-    grid-template-columns: 1fr 380px;
+    grid-template-columns: var(--avatar-col, 1fr) 8px var(--orders-col, 400px);
     height: 100%;
     gap: 0;
 }
 
-.consumer-layout.fullscreen {
-    grid-template-columns: 1fr;
+/* ── Drag Splitter ──────────────────────────────────────────────── */
+.splitter {
+    width: 8px;
+    background: var(--pizza-border);
+    cursor: col-resize;
+    transition: background 0.15s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.splitter:hover,
+.splitter.dragging {
+    background: var(--pizza-red);
+}
+
+.splitter::after {
+    content: '⋮';
+    color: var(--pizza-muted);
+    font-size: 1rem;
+    pointer-events: none;
 }
 
 /* ── Avatar Panel ────────────────────────────────────────────────── */
@@ -138,7 +147,7 @@ html, body {
 .avatar-video-wrapper {
     position: relative;
     flex: 1;
-    background: #000;
+    background: var(--pizza-darker);
     min-height: 0;
 }
 
