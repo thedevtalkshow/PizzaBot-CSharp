@@ -16,10 +16,13 @@ public class PizzaApiService(HttpClient httpClient)
     public async Task<Pizza?> GetPizzaAsync(string id) =>
         await httpClient.GetFromJsonAsync<Pizza?>($"/api/pizzas/{id}", JsonOptions);
 
-    public async Task<List<OrderResponse>> GetOrdersAsync(string userId, string? status = null)
+    public async Task<List<OrderResponse>> GetOrdersAsync(string? userId = null, string? status = null)
     {
-        var url = $"/api/orders?userId={Uri.EscapeDataString(userId)}";
-        if (!string.IsNullOrEmpty(status)) url += $"&status={Uri.EscapeDataString(status)}";
+        var url = "/api/orders";
+        var query = new List<string>();
+        if (!string.IsNullOrWhiteSpace(userId)) query.Add($"userId={Uri.EscapeDataString(userId)}");
+        if (!string.IsNullOrWhiteSpace(status)) query.Add($"status={Uri.EscapeDataString(status)}");
+        if (query.Count > 0) url += "?" + string.Join("&", query);
         return await httpClient.GetFromJsonAsync<List<OrderResponse>>(url, JsonOptions) ?? [];
     }
 }

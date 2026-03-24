@@ -4,18 +4,28 @@
 
 <div class="cart-container">
     <div class="cart-header">
-        <h2>🛒 Your Orders</h2>
+        <h2>📋 Orders</h2>
         @if (_loading)
         {
             <span class="loading-dot">●</span>
         }
     </div>
 
+    <div class="cart-filter">
+        <label for="userIdFilter">Filter by User ID</label>
+        <input id="userIdFilter"
+               type="text"
+               class="filter-input"
+               placeholder="Paste a user ID (GUID) to filter…"
+               @bind="_filterUserId"
+               @bind:event="oninput" />
+    </div>
+
     @if (_orders.Count == 0 && !_loading)
     {
         <div class="cart-empty">
             <div class="empty-icon">🍕</div>
-            <p>No orders yet — just ask Lisa to order some pizza!</p>
+            <p>@(_hasFilter ? "No orders found for that user ID." : "No orders yet.")</p>
         </div>
     }
     else
@@ -70,7 +80,8 @@
 </div>
 
 @code {
-    [Parameter, EditorRequired] public string UserId { get; set; } = default!;
+    private string _filterUserId = string.Empty;
+    private bool _hasFilter => !string.IsNullOrWhiteSpace(_filterUserId);
 
     private List<OrderResponse> _orders = [];
     private Dictionary<string, Pizza> _pizzaCache = [];
@@ -115,8 +126,8 @@
         try
         {
             _loading = true;
-            _orders = await PizzaApi.GetOrdersAsync(UserId);
-            // Most recent first
+            var userId = _hasFilter ? _filterUserId.Trim() : null;
+            _orders = await PizzaApi.GetOrdersAsync(userId);
             _orders = [.. _orders.OrderByDescending(o => o.CreatedAt)];
         }
         catch { /* silently ignore — API might not be running */ }

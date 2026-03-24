@@ -6,8 +6,6 @@
 
 @{
     var clientId = ClientService.InitializeClient();
-    // userId must match what FoundryAgentService passes to the agent (no hyphens)
-    var userId = clientId.ToString("N");
     var settings = AvatarOptions.Value;
 }
 
@@ -71,7 +69,7 @@
 
     <!-- ── Live Orders Panel ───────────────────────────────────────── -->
     <div class="cart-panel">
-        <CartPanel UserId="@userId" />
+        <CartPanel />
     </div>
 
 </div>

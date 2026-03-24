@@ -279,6 +279,35 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
 
 .loading-dot { color: var(--pizza-green); animation: pulse 1s infinite; }
 
+.cart-filter {
+    margin-bottom: 1rem;
+}
+
+.cart-filter label {
+    display: block;
+    font-size: 0.75rem;
+    color: var(--pizza-muted);
+    margin-bottom: 0.3rem;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+}
+
+.filter-input {
+    width: 100%;
+    background: var(--pizza-card);
+    border: 1px solid var(--pizza-border);
+    border-radius: 6px;
+    padding: 0.4rem 0.6rem;
+    color: var(--pizza-text);
+    font-size: 0.8rem;
+    box-sizing: border-box;
+}
+
+.filter-input:focus {
+    outline: none;
+    border-color: var(--pizza-orange);
+}
+
 .cart-empty {
     text-align: center;
     padding: 3rem 1rem;
