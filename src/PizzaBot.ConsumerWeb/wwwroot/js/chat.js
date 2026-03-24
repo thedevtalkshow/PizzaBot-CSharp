@@ -333,14 +333,6 @@ function connectToAvatarService(peerConnection) {
         headers['Reconnect'] = true
     }
 
-    if (document.getElementById('azureOpenAIDeploymentName').value !== '') {
-        headers['AoaiDeploymentName'] = document.getElementById('azureOpenAIDeploymentName').value
-    }
-
-    if (document.getElementById('enableOyd').checked && document.getElementById('azureCogSearchIndexName').value !== '') {
-        headers['CognitiveSearchIndexName'] = document.getElementById('azureCogSearchIndexName').value
-    }
-
     if (document.getElementById('ttsVoice').value !== '') {
         headers['TtsVoice'] = document.getElementById('ttsVoice').value
     }
@@ -602,26 +594,6 @@ window.stopSession = () => {
     disconnectAvatar(true)
 }
 
-window.clearChatHistory = () => {
-    lastInteractionTime = new Date()
-    fetch('/api/chat/clearHistory', {
-        method: 'POST',
-        headers: {
-            'ClientId': clientId,
-            'SystemPrompt': document.getElementById('prompt').value
-        },
-        body: ''
-    })
-    .then(response => {
-        if (response.ok) {
-            document.getElementById('chatHistory').innerHTML = ''
-            document.getElementById('latencyLog').innerHTML = ''
-        } else {
-            throw new Error(`Failed to clear chat history: ${response.status} ${response.statusText}`)
-        }
-    })
-}
-
 window.microphone = () => {
     lastInteractionTime = new Date()
 
@@ -716,61 +688,6 @@ window.microphone = () => {
             console.log("Failed to start continuous recognition:", err)
             document.getElementById('microphone').disabled = false
         })
-}
-
-window.updataEnableOyd = () => {
-    if (document.getElementById('enableOyd').checked) {
-        document.getElementById('cogSearchConfig').hidden = false
-    } else {
-        document.getElementById('cogSearchConfig').hidden = true
-    }
-}
-
-window.updatePhotoAvatarBox = () => {
-    if (document.getElementById('photoAvatar').checked) {
-        document.getElementById('talkingAvatarCharacter').value = 'anika'
-        document.getElementById('talkingAvatarStyle').value = ''
-    } else {
-        document.getElementById('talkingAvatarCharacter').value = 'lisa'
-        document.getElementById('talkingAvatarStyle').value = 'casual-sitting'
-    }
-}
-
-window.updateTypeMessageBox = () => {
-    if (document.getElementById('showTypeMessage').checked) {
-        document.getElementById('userMessageBox').hidden = false
-        document.getElementById('userMessageBox').addEventListener('keyup', (e) => {
-            if (e.key === 'Enter') {
-                const userQuery = document.getElementById('userMessageBox').value
-                if (userQuery !== '') {
-                    let chatHistoryTextArea = document.getElementById('chatHistory')
-                    if (chatHistoryTextArea.innerHTML !== '' && !chatHistoryTextArea.innerHTML.endsWith('\n\n')) {
-                        chatHistoryTextArea.innerHTML += '\n\n'
-                    }
-
-                    chatHistoryTextArea.innerHTML += "User: " + userQuery.trim('\n') + '\n\n'
-                    chatHistoryTextArea.scrollTop = chatHistoryTextArea.scrollHeight
-
-                    if (isSpeaking) {
-                        window.stopSpeaking()
-                    }
-
-                    handleUserQuery(userQuery.trim('\n'))
-                    document.getElementById('userMessageBox').value = ''
-                }
-            }
-        })
-    } else {
-        document.getElementById('userMessageBox').hidden = true
-    }
-}
-
-window.updateLocalVideoForIdle = () => {
-    if (document.getElementById('useLocalVideoForIdle').checked) {
-        document.getElementById('showTypeMessageCheckbox').hidden = true
-    } else {
-        document.getElementById('showTypeMessageCheckbox').hidden = false
-    }
 }
 
 window.onbeforeunload = () => {

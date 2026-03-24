@@ -17,5 +17,4 @@ public class AvatarClientContext
     public bool IsSpeaking { get; set; }
     public string? SpeakingText { get; set; }
     public LinkedList<string> SpokenTextQueue { get; set; } = new();
-    public DateTime? LastSpeakTime { get; set; }
 }
