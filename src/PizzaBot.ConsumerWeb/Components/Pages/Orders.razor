@@ -1,0 +1,111 @@
+@page "/orders"
+@rendermode InteractiveServer
+@inject PizzaApiService PizzaApi
+@implements IAsyncDisposable
+
+<PageTitle>My Orders — Contoso Pizza</PageTitle>
+
+<div class="orders-page">
+    <h1>🍕 All Orders</h1>
+
+    @if (_loading)
+    {
+        <p class="text-muted">Loading orders…</p>
+    }
+    else if (_orders.Count == 0)
+    {
+        <p class="text-muted">No orders found.</p>
+    }
+    else
+    {
+        <table class="table table-dark table-hover">
+            <thead>
+                <tr>
+                    <th>Order ID</th>
+                    <th>Status</th>
+                    <th>Items</th>
+                    <th>Total</th>
+                    <th>Created</th>
+                    <th>Est. Ready</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var order in _orders)
+                {
+                    <tr>
+                        <td class="font-monospace">@order.Id[..8]…</td>
+                        <td><span class="badge @GetBadgeClass(order.Status)">@order.Status</span></td>
+                        <td>@(order.Items?.Sum(i => i.Quantity) ?? 0) pizza(s)</td>
+                        <td>$@order.TotalPrice.ToString("F2")</td>
+                        <td>@FormatTime(order.CreatedAt)</td>
+                        <td>@FormatTime(order.EstimatedCompletionAt)</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    }
+</div>
+
+@code {
+    private List<OrderResponse> _orders = [];
+    private bool _loading = true;
+    private PeriodicTimer? _timer;
+    private CancellationTokenSource? _cts;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await RefreshAsync();
+        _cts = new CancellationTokenSource();
+        _timer = new PeriodicTimer(TimeSpan.FromSeconds(10));
+
+        _ = Task.Run(async () =>
+        {
+            try
+            {
+                while (await _timer.WaitForNextTickAsync(_cts.Token))
+                {
+                    await RefreshAsync();
+                    await InvokeAsync(StateHasChanged);
+                }
+            }
+            catch (OperationCanceledException) { }
+        });
+    }
+
+    private async Task RefreshAsync()
+    {
+        try
+        {
+            _loading = true;
+            _orders = await PizzaApi.GetOrdersAsync(string.Empty);
+            _orders = [.. _orders.OrderByDescending(o => o.CreatedAt)];
+        }
+        catch { }
+        finally { _loading = false; }
+    }
+
+    private static string GetBadgeClass(string? status) => status switch
+    {
+        "pending" => "bg-warning text-dark",
+        "in_preparation" => "bg-info text-dark",
+        "ready" => "bg-success",
+        "delivered" => "bg-secondary",
+        "cancelled" => "bg-danger",
+        _ => "bg-secondary"
+    };
+
+    private static string FormatTime(string? iso)
+    {
+        if (!DateTime.TryParse(iso, null, System.Globalization.DateTimeStyles.RoundtripKind, out var dt))
+            return iso ?? "—";
+        return dt.ToLocalTime().ToString("h:mm tt");
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        _cts?.Cancel();
+        _timer?.Dispose();
+        _cts?.Dispose();
+        await Task.CompletedTask;
+    }
+}

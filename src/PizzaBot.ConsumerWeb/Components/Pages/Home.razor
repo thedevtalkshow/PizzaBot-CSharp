@@ -1,0 +1,114 @@
+﻿@page "/"
+@inject IClientService ClientService
+@inject IOptions<PizzaBot.ConsumerWeb.Models.AvatarSettings> AvatarOptions
+@using Microsoft.Extensions.Options
+
+@{
+    var clientId = ClientService.InitializeClient();
+    var settings = AvatarOptions.Value;
+}
+
+<PageTitle>Contoso Pizza — Order with Lisa</PageTitle>
+
+<div class="consumer-layout">
+
+    <!-- ── Avatar + Chat Panel ─────────────────────────────────────── -->
+    <div class="avatar-panel">
+
+        <!-- Hidden config inputs read by chat.js -->
+        <input type="hidden" id="clientId" value="@clientId" />
+        <input type="hidden" id="talkingAvatarCharacter" value="@settings.AvatarCharacter" />
+        <input type="hidden" id="talkingAvatarStyle" value="@settings.AvatarStyle" />
+        <input type="hidden" id="ttsVoice" value="@settings.TtsVoice" />
+        <input type="hidden" id="backgroundColor" value="@settings.BackgroundColor" />
+        <input type="hidden" id="isCustomAvatar" value="false" />
+        <input type="hidden" id="isPhotoAvatar" value="false" />
+        <input type="hidden" id="transparentBackground" value="false" />
+        <input type="hidden" id="videoCrop" value="false" />
+
+        <!-- Avatar video -->
+        <div class="avatar-video-wrapper">
+            <div id="videoPlaceholder" class="video-placeholder">
+                <div class="placeholder-content">
+                    <div class="pizza-icon">🍕</div>
+                    <p>Click <strong>Start Chat</strong> to meet Lisa,<br />your Contoso Pizza guide!</p>
+                </div>
+            </div>
+            <div id="remoteVideo" class="remote-video"></div>
+            <div id="localVideo" hidden></div>
+        </div>
+
+        <!-- Avatar controls -->
+        <div class="avatar-controls">
+            <button id="startSession" class="btn-primary-pizza" onclick="window.startSession()">
+                🎬 Start Chat
+            </button>
+            <button id="stopSession" class="btn-secondary-pizza" onclick="window.stopSession()" disabled>
+                ⏹ End Chat
+            </button>
+            <button id="microphone" class="btn-mic" onclick="window.microphone()" disabled title="Talk to Lisa">
+                🎤 Speak
+            </button>
+            <button id="stopSpeaking" class="btn-secondary-pizza" onclick="window.stopSpeaking()" disabled>
+                🔇 Stop
+            </button>
+        </div>
+
+        <!-- Chat transcript -->
+        <div id="chatHistory" class="chat-history"></div>
+
+        <!-- Text input -->
+        <div class="chat-input-row">
+            <textarea id="userMessageBox" class="chat-input" placeholder="Type your order here and press Enter…" rows="2"></textarea>
+            <button class="btn-send" id="sendButton" disabled onclick="window.sendMessage()">Send ➤</button>
+        </div>
+
+        <div id="overlayArea" class="overlay-area"></div>
+    </div>
+
+    <!-- ── Live Cart Panel ─────────────────────────────────────────── -->
+    <div class="cart-panel">
+        <CartPanel UserId="@clientId.ToString("N")" />
+    </div>
+</div>
+
+<script src="js/chat.js"></script>
+<script>
+    // Show the type box immediately and enable it once the session starts
+    document.addEventListener('DOMContentLoaded', () => {
+        const box = document.getElementById('userMessageBox');
+        const sendBtn = document.getElementById('sendButton');
+        if (box) box.hidden = false;
+
+        // Wire up Enter key (chat.js uses keyup on userMessageBox only after updateTypeMessageBox() fires)
+        if (box) {
+            box.addEventListener('keyup', (e) => {
+                if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault();
+                    window.sendMessage();
+                }
+            });
+        }
+
+        // Enable send button when session is live (poll until startSession sets it up)
+        const checkReady = setInterval(() => {
+            const micBtn = document.getElementById('microphone');
+            if (micBtn && !micBtn.disabled) {
+                if (sendBtn) sendBtn.disabled = false;
+                clearInterval(checkReady);
+            }
+        }, 500);
+    });
+
+    window.sendMessage = function () {
+        const box = document.getElementById('userMessageBox');
+        if (!box) return;
+        const text = box.value.trim();
+        if (!text) return;
+        box.value = '';
+        if (typeof window.handleUserQuery === 'function') {
+            window.handleUserQuery(text);
+        }
+    };
+</script>
+

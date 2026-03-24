@@ -5,6 +5,7 @@
     <Project Path="Shared/Shared.csproj" />
   </Folder>
   <Project Path="PizzaBot.AgentFramework/PizzaBot.AgentFramework.csproj" />
+  <Project Path="PizzaBot.ConsumerWeb/PizzaBot.ConsumerWeb.csproj" />
   <Project Path="PizzaBot.CreateFoundryAgent/PizzaBot.CreateFoundryAgent.csproj" />
   <Project Path="PizzaBot.UseExistingAgent/PizzaBot.UseExistingAgent.csproj" />
   <Project Path="PizzaBot.Dashboard/PizzaBot.Dashboard.csproj" />
