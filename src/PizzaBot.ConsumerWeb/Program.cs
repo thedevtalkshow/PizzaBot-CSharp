@@ -22,12 +22,22 @@ builder.Services.AddHttpClient<IceTokenService>();
 builder.Services.AddHttpClient<SpeechTokenService>();
 builder.Services.AddHostedService<TokenRefreshBackgroundService>();
 
-// Pizza API HTTP client
-builder.Services.AddHttpClient<PizzaApiService>(client =>
+// Pizza API HTTP client — optional, used by Orders page when API is available
+if (!string.IsNullOrEmpty(builder.Configuration["PizzaApi:BaseUrl"]))
 {
-    var baseUrl = builder.Configuration["PizzaApi:BaseUrl"] ?? "http://localhost:7071";
-    client.BaseAddress = new Uri(baseUrl);
-});
+    builder.Services.AddHttpClient<PizzaApiService>(client =>
+    {
+        client.BaseAddress = new Uri(builder.Configuration["PizzaApi:BaseUrl"]!);
+    });
+}
+else
+{
+    // Register with a no-op base address so injection doesn't fail
+    builder.Services.AddHttpClient<PizzaApiService>(client =>
+    {
+        client.BaseAddress = new Uri("http://localhost:7071");
+    });
+}
 
 var app = builder.Build();
 

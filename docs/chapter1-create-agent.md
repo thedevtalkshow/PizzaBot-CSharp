@@ -7,7 +7,9 @@ This chapter walks through building `PizzaBot.CreateFoundryAgent` from scratch. 
 3. **Function tool** — a client-side calculator the model can invoke
 4. **MCP tool** — a hosted backend the model calls directly without any client code
 
-The agent **persists in Foundry**. You only re-run this project when you want to change the agent's definition. Other projects in this repo connect to the same agent without recreating it.
+The agent **persists in Foundry**. You only need to re-run this project when you want to change the agent's definition. Other projects in this repo connect to the same agent without recreating it.
+
+However, you are free to keep using this version because it will not create a new version of the agent if nothing has changed about its definition. The agent versioning system in Foundry is designed to let you iterate on the agent definition without worrying about creating duplicates.
 
 ## What you'll build
 
