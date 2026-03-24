@@ -68,6 +68,33 @@
 
 </div>
 
+<!--
+    Ghost elements required by chat.js but not visible in the simplified pizza UI.
+    These prevent null-reference errors in the script's DOM callbacks.
+-->
+<div id="configuration" hidden></div>
+<textarea id="latencyLog" hidden></textarea>
+<div id="showTypeMessageCheckbox" hidden></div>
+<div id="cogSearchConfig" hidden></div>
+<audio id="audioPlayer" hidden></audio>
+
+<!-- Feature flags: hardcoded to sensible defaults for the pizza chat experience -->
+<input type="checkbox" id="useLocalVideoForIdle" hidden />
+<input type="checkbox" id="autoReconnectAvatar" hidden />
+<input type="checkbox" id="photoAvatar" hidden />
+<input type="checkbox" id="customizedAvatar" hidden />
+<input type="checkbox" id="enableOyd" hidden />
+<input type="checkbox" id="continuousConversation" hidden checked />
+<input type="checkbox" id="showTypeMessage" hidden checked />
+
+<!-- Config values: empty overrides (handled server-side via Foundry agent) -->
+<input type="hidden" id="sttLocales" value="en-US" />
+<input type="hidden" id="azureOpenAIDeploymentName" value="" />
+<input type="hidden" id="azureCogSearchIndexName" value="" />
+<input type="hidden" id="customVoiceEndpointId" value="" />
+<input type="hidden" id="personalVoiceSpeakerProfileID" value="" />
+<textarea id="prompt" hidden></textarea>
+
 <script src="js/chat.js"></script>
 <script>
     // Show the type box immediately and enable it once the session starts
