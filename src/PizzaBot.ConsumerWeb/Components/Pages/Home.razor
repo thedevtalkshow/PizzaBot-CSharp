@@ -2,15 +2,18 @@
 @inject IClientService ClientService
 @inject IOptions<PizzaBot.ConsumerWeb.Models.AvatarSettings> AvatarOptions
 @using Microsoft.Extensions.Options
+@using PizzaBot.ConsumerWeb.Components.Shared
 
 @{
     var clientId = ClientService.InitializeClient();
+    // userId must match what FoundryAgentService passes to the agent (no hyphens)
+    var userId = clientId.ToString("N");
     var settings = AvatarOptions.Value;
 }
 
 <PageTitle>Contoso Pizza — Order with Lisa</PageTitle>
 
-<div class="consumer-layout fullscreen">
+<div class="consumer-layout">
 
     <!-- ── Avatar + Chat Panel ─────────────────────────────────────── -->
     <div class="avatar-panel">
@@ -64,6 +67,11 @@
         </div>
 
         <div id="overlayArea" class="overlay-area"></div>
+    </div>
+
+    <!-- ── Live Orders Panel ───────────────────────────────────────── -->
+    <div class="cart-panel">
+        <CartPanel UserId="@userId" />
     </div>
 
 </div>
