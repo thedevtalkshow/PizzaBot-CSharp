@@ -364,6 +364,41 @@ function connectToAvatarService(peerConnection) {
     })
 }
 
+// Append a complete message (user or bot) to the chat history panel.
+function appendChatMessage(role, text) {
+    const history = document.getElementById('chatHistory')
+    if (!history || !text?.trim()) return
+
+    const div = document.createElement('div')
+    div.className = `chat-message ${role === 'user' ? 'user-message' : 'bot-message'}`
+    const labelSpan = document.createElement('span')
+    labelSpan.className = 'message-label'
+    labelSpan.textContent = role === 'user' ? 'You: ' : 'Lisa: '
+    const textSpan = document.createElement('span')
+    textSpan.className = 'message-text'
+    textSpan.textContent = text
+    div.appendChild(labelSpan)
+    div.appendChild(textSpan)
+    history.appendChild(div)
+    history.scrollTop = history.scrollHeight
+}
+
+// Begin a streaming bot message; returns the span to append chunks into.
+function beginBotMessage() {
+    const history = document.getElementById('chatHistory')
+    const div = document.createElement('div')
+    div.className = 'chat-message bot-message'
+    const labelSpan = document.createElement('span')
+    labelSpan.className = 'message-label'
+    labelSpan.textContent = 'Lisa: '
+    const textSpan = document.createElement('span')
+    textSpan.className = 'message-text'
+    div.appendChild(labelSpan)
+    div.appendChild(textSpan)
+    history.appendChild(div)
+    return textSpan
+}
+
 // Handle user query. Send user query to the chat API and display the response.
 function handleUserQuery(userQuery) {
     lastInteractionTime = new Date()
@@ -384,7 +419,7 @@ function handleUserQuery(userQuery) {
         }
 
         let chatHistoryTextArea = document.getElementById('chatHistory')
-        chatHistoryTextArea.innerHTML += 'Assistant: '
+        let botTextSpan = beginBotMessage()
 
         const reader = response.body.getReader()
 
@@ -426,7 +461,7 @@ function handleUserQuery(userQuery) {
                     }
                 }
 
-                chatHistoryTextArea.innerHTML += `${chunkString}`
+                botTextSpan.textContent += chunkString
                 chatHistoryTextArea.scrollTop = chatHistoryTextArea.scrollHeight
 
                 // Continue reading the next chunk
@@ -665,13 +700,7 @@ window.microphone = () => {
                     })
             }
 
-            let chatHistoryTextArea = document.getElementById('chatHistory')
-            if (chatHistoryTextArea.innerHTML !== '' && !chatHistoryTextArea.innerHTML.endsWith('\n\n')) {
-                chatHistoryTextArea.innerHTML += '\n\n'
-            }
-
-            chatHistoryTextArea.innerHTML += "User: " + userQuery + '\n\n'
-            chatHistoryTextArea.scrollTop = chatHistoryTextArea.scrollHeight
+            appendChatMessage('user', userQuery)
 
             handleUserQuery(userQuery)
 

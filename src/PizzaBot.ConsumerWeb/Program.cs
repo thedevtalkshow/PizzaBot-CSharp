@@ -15,12 +15,16 @@ builder.Services.Configure<AvatarSettings>(builder.Configuration.GetSection("Ava
 // PizzaBot Foundry agent config
 builder.Services.Configure<PizzaBotSettings>(builder.Configuration.GetSection("PizzaBot"));
 
-// Avatar services
+// Avatar services (existing /chat implementation)
 builder.Services.AddSingleton<IClientService, ClientService>();
 builder.Services.AddSingleton<FoundryAgentService>();
 builder.Services.AddHttpClient<IceTokenService>();
 builder.Services.AddHttpClient<SpeechTokenService>();
 builder.Services.AddHostedService<TokenRefreshBackgroundService>();
+
+// Voice Live settings + session factory (/voice-live implementation)
+builder.Services.Configure<VoiceLiveSettings>(builder.Configuration.GetSection("VoiceLive"));
+builder.Services.AddSingleton<VoiceLiveSessionService>();
 
 // Pizza API HTTP client — optional, used by Orders page when API is available
 if (!string.IsNullOrEmpty(builder.Configuration["PizzaApi:BaseUrl"]))
@@ -48,10 +52,28 @@ if (!app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
+app.UseWebSockets();
 app.UseAntiforgery();
 
 app.MapStaticAssets();
 app.MapControllers();
+
+// WebSocket endpoint for Voice Live — browser audio in, events out
+app.Map("/ws/voice-live", async (HttpContext context,
+    VoiceLiveSessionService sessionService,
+    ILogger<Program> logger,
+    IHostApplicationLifetime lifetime) =>
+{
+    if (!context.WebSockets.IsWebSocketRequest)
+    {
+        context.Response.StatusCode = StatusCodes.Status400BadRequest;
+        return;
+    }
+
+    var ws = await context.WebSockets.AcceptWebSocketAsync();
+    await VoiceLiveWebSocketHandler.HandleAsync(ws, sessionService, logger, lifetime.ApplicationStopping);
+});
+
 app.MapRazorComponents<App>()
     .AddInteractiveServerRenderMode();
 

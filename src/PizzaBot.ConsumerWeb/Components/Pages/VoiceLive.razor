@@ -1,0 +1,84 @@
+@page "/voice-live"
+@using PizzaBot.ConsumerWeb.Components.Shared
+
+<PageTitle>Contoso Pizza — Voice Live</PageTitle>
+
+<div class="consumer-layout">
+
+    <!-- ── Avatar + Voice Panel ─────────────────────────────────────── -->
+    <div class="avatar-panel">
+
+        <!-- Avatar video — WebRTC stream from Voice Live attaches here -->
+        <div class="avatar-video-wrapper">
+            <div id="videoPlaceholder" class="video-placeholder">
+                <div class="placeholder-content">
+                    <div class="pizza-icon">🍕</div>
+                    <p>Click <strong>Start</strong> to begin your voice conversation with Lisa!</p>
+                </div>
+            </div>
+            <div id="remoteVideo" class="remote-video"></div>
+        </div>
+
+        <!-- Session controls -->
+        <div class="avatar-controls">
+            <button id="btnStart" class="btn-primary-pizza" onclick="voiceLive.start()">
+                🎬 Start
+            </button>
+            <button id="btnStop" class="btn-secondary-pizza" onclick="voiceLive.stop()" disabled>
+                ⏹ End
+            </button>
+            <button id="btnMic" class="btn-mic" onclick="voiceLive.toggleMic()" disabled title="Speak to Lisa">
+                🎤 Speak
+            </button>
+        </div>
+
+        <!-- Chat transcript -->
+        <div id="chatHistory" class="chat-history"></div>
+
+    </div>
+
+    <!-- ── Drag Splitter ───────────────────────────────────────────── -->
+    <div class="splitter" id="panelSplitter"></div>
+
+    <!-- ── Live Orders Panel ───────────────────────────────────────── -->
+    <div class="cart-panel">
+        <CartPanel />
+    </div>
+
+</div>
+
+<script src="js/voice-live.js"></script>
+<script>
+    // ── Panel splitter drag logic (identical to / page) ─────────────
+    (function () {
+        const splitter = document.getElementById('panelSplitter');
+        const layout = splitter?.closest('.consumer-layout');
+        if (!splitter || !layout) return;
+
+        let dragging = false;
+
+        splitter.addEventListener('mousedown', e => {
+            dragging = true;
+            splitter.classList.add('dragging');
+            document.body.style.cursor = 'col-resize';
+            document.body.style.userSelect = 'none';
+            e.preventDefault();
+        });
+
+        document.addEventListener('mousemove', e => {
+            if (!dragging) return;
+            const rect = layout.getBoundingClientRect();
+            const avatarPx = Math.min(Math.max(e.clientX - rect.left, rect.width * 0.35), rect.width * 0.80);
+            const ordersPx = rect.width - avatarPx - 8;
+            layout.style.gridTemplateColumns = `${avatarPx}px 8px ${ordersPx}px`;
+        });
+
+        document.addEventListener('mouseup', () => {
+            if (!dragging) return;
+            dragging = false;
+            splitter.classList.remove('dragging');
+            document.body.style.cursor = '';
+            document.body.style.userSelect = '';
+        });
+    })();
+</script>
