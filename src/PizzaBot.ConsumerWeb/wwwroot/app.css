@@ -228,7 +228,18 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
     line-height: 1.5;
 }
 
-/* chat.js injects spans with classes */
+/* Structured chat message divs (used by both chat.js and voice-live.js) */
+.chat-message {
+    margin-bottom: 0.65rem;
+}
+.message-label {
+    font-weight: 600;
+}
+.user-message .message-label { color: var(--pizza-orange); }
+.bot-message .message-label  { color: var(--pizza-light); }
+.message-text { color: var(--pizza-light); }
+
+/* Legacy spans — kept for backward compatibility */
 .user-query { color: var(--pizza-orange); }
 .response { color: var(--pizza-light); }
 
