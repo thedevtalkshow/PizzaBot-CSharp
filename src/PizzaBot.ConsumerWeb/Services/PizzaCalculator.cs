@@ -1,21 +1,28 @@
+using System.ComponentModel;
+
 namespace PizzaBot.ConsumerWeb.Services;
 
 /// <summary>
 /// Calculates the number of pizzas to order based on headcount and appetite.
-/// Mirrors the function tool defined in the Foundry agent.
+/// The method signature (name + Description attributes) is what AIFunctionFactory
+/// reflects over to produce the tool schema the agent uses.
 /// </summary>
 public static class PizzaCalculator
 {
-    public static int Calculate(int numberOfPeople, string appetite = "average")
+    [Description("Calculates the number of pizzas to order based on the number of people and their appetite level.")]
+    public static int CalculateNumberOfPizzasToOrder(
+        [Description("The number of people we are ordering pizza for.")] int numberOfPeople,
+        [Description("The appetite level: 'light' (1 slice per person), 'average' (2 slices per person), or 'heavy' (4 slices per person). Defaults to 'average'.")] string appetite = "average")
     {
-        var multiplier = appetite.ToLowerInvariant() switch
+        int slicesPerPerson = appetite.ToLowerInvariant() switch
         {
-            "light" => 0.5,
-            "hungry" => 1.0,
-            "starving" => 1.5,
-            _ => 0.75  // average
+            "light" => 1,
+            "heavy" => 4,
+            _ => 2  // average or default
         };
 
-        return (int)Math.Ceiling(numberOfPeople * multiplier);
+        int slicesPerPizza = 12;
+        int totalSlicesNeeded = numberOfPeople * slicesPerPerson;
+        return (int)Math.Ceiling((double)totalSlicesNeeded / slicesPerPizza);
     }
 }

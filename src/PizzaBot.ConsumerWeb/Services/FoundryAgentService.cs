@@ -1,30 +1,30 @@
 #pragma warning disable OPENAI001
 
 using Azure.AI.Projects;
-using Azure.AI.Projects.OpenAI;
 using Azure.Identity;
+using Microsoft.Agents.AI;
+using Microsoft.Extensions.AI;
 using Microsoft.Extensions.Options;
-using OpenAI.Responses;
 using PizzaBot.ConsumerWeb.Models;
 using System.Collections.Concurrent;
-using System.Text.Json;
 
 namespace PizzaBot.ConsumerWeb.Services;
 
 /// <summary>
 /// Manages per-session conversations with the PizzaBot Foundry agent.
-/// Each connected avatar client gets its own conversation thread so history is maintained.
+/// Each connected avatar client gets its own AgentSession so conversation
+/// history is maintained per user across turns.
 /// </summary>
 public class FoundryAgentService
 {
-    private readonly AIProjectClient _projectClient;
+    private readonly AIProjectClient? _projectClient;
     private readonly string _agentName;
-    private readonly ConcurrentDictionary<Guid, SessionState> _sessions = new();
 
-    private record SessionState(
-        AgentRecord Agent,
-        ProjectConversation Conversation,
-        ProjectResponsesClient ResponsesClient);
+    // One agent instance is shared; sessions are per-user.
+    private ChatClientAgent? _agent;
+    private readonly SemaphoreSlim _agentInitLock = new(1, 1);
+
+    private readonly ConcurrentDictionary<Guid, AgentSession> _sessions = new();
 
     public FoundryAgentService(IOptions<PizzaBotSettings> settings)
     {
@@ -32,38 +32,33 @@ public class FoundryAgentService
         _agentName = settings.Value.AgentName;
 
         if (!string.IsNullOrWhiteSpace(endpoint))
-        {
             _projectClient = new AIProjectClient(new Uri(endpoint), new DefaultAzureCredential());
-        }
-        else
-        {
-            // Allow startup without config — agent calls will fail gracefully
-            _projectClient = null!;
-        }
     }
 
     /// <summary>
-    /// Creates a new conversation thread for the given client session.
-    /// Sends an initial system context message so the agent knows the user's ordering ID.
+    /// Creates a new AgentSession for the given client and primes it with the
+    /// user's ordering ID so the agent always uses the correct userId in tool calls.
     /// </summary>
-    public void InitializeSession(Guid clientId, string userId)
+    public async Task InitializeSessionAsync(Guid clientId, string userId)
     {
         if (_projectClient is null) return;
 
-        AgentRecord agent = _projectClient.Agents.GetAgent(_agentName);
-        ProjectConversation conversation = _projectClient.OpenAI.Conversations.CreateProjectConversation();
-        ProjectResponsesClient responseClient = _projectClient.OpenAI.GetProjectResponsesClientForAgent(agent, conversation);
+        var agent = await GetOrCreateAgentAsync();
+        var session = await agent.CreateSessionAsync();
+        _sessions[clientId] = session;
 
-        _sessions[clientId] = new SessionState(agent, conversation, responseClient);
-
-        // Inject the user's ordering ID as a context message so the agent uses it when calling the API
-        SendContextMessage(clientId, $"[System context: The user's pizza ordering ID is '{userId}'. Always use this exact ID value when calling any tool that requires a userId or customerId.]");
+        // Prime the session with the user's ordering ID so the agent uses it
+        // when calling the Pizza API. We discard the response — it's just context.
+        await agent.RunAsync(
+            $"[System context: The user's pizza ordering ID is '{userId}'. Always use this exact ID value when calling any tool that requires a userId or customerId.]",
+            session);
     }
 
     /// <summary>
-    /// Sends a user message and returns the agent's full text response after all tool calls complete.
+    /// Sends a user message and returns the agent's full text response after
+    /// all tool calls (e.g. CalculateNumberOfPizzasToOrder) have been dispatched.
     /// </summary>
-    public string SendMessage(Guid clientId, string userMessage)
+    public async Task<string> SendMessageAsync(Guid clientId, string userMessage)
     {
         if (_projectClient is null)
             return "I'm not fully configured yet. Please set PizzaBot:ProjectEndpoint in your settings.";
@@ -73,7 +68,9 @@ public class FoundryAgentService
 
         try
         {
-            return RunConversationTurn(session.ResponsesClient, userMessage);
+            var agent = await GetOrCreateAgentAsync();
+            var response = await agent.RunAsync(userMessage, session);
+            return response.ToString();
         }
         catch (Exception ex)
         {
@@ -84,50 +81,28 @@ public class FoundryAgentService
 
     public void RemoveSession(Guid clientId) => _sessions.TryRemove(clientId, out _);
 
-    private void SendContextMessage(Guid clientId, string contextMessage)
+    // Lazily creates the ChatClientAgent on first use. The agent is shared across
+    // all sessions — only the AgentSession differs per user.
+    private async Task<ChatClientAgent> GetOrCreateAgentAsync()
     {
-        if (!_sessions.TryGetValue(clientId, out var session)) return;
-        RunConversationTurn(session.ResponsesClient, contextMessage, suppressOutput: true);
-    }
+        if (_agent is not null) return _agent;
 
-    private static string RunConversationTurn(ProjectResponsesClient responseClient, string userMessage, bool suppressOutput = false)
-    {
-        var responseOptions = new CreateResponseOptions
+        await _agentInitLock.WaitAsync();
+        try
         {
-            InputItems = { ResponseItem.CreateUserMessageItem(userMessage) }
-        };
+            // Double-check after acquiring the lock
+            if (_agent is not null) return _agent;
 
-        ResponseResult response;
-        bool functionCalled;
+            // AIFunctionFactory reflects over the method's [Description] attributes to
+            // produce the JSON schema the model uses to know when and how to call the tool.
+            AITool pizzaCalculatorTool = AIFunctionFactory.Create(PizzaCalculator.CalculateNumberOfPizzasToOrder);
 
-        do
+            _agent = await _projectClient!.GetAIAgentAsync(_agentName, tools: [pizzaCalculatorTool]);
+            return _agent;
+        }
+        finally
         {
-            response = responseClient.CreateResponse(responseOptions);
-            functionCalled = false;
-
-            foreach (var item in response.OutputItems)
-            {
-                responseOptions.InputItems.Add(item);
-
-                if (item is FunctionCallResponseItem fn && fn.FunctionName == "CalculateNumberOfPizzasToOrder")
-                {
-                    using var argsDoc = JsonDocument.Parse(fn.FunctionArguments);
-                    var numberOfPeople = argsDoc.RootElement.GetProperty("numberOfPeople").GetInt32();
-                    var appetite = argsDoc.RootElement.TryGetProperty("appetite", out var a)
-                        ? a.GetString() ?? "average"
-                        : "average";
-
-                    var pizzaCount = PizzaCalculator.Calculate(numberOfPeople, appetite);
-                    Console.WriteLine($"[Agent] CalculateNumberOfPizzasToOrder({numberOfPeople}, {appetite}) = {pizzaCount}");
-
-                    responseOptions.InputItems.Add(
-                        ResponseItem.CreateFunctionCallOutputItem(fn.CallId, pizzaCount.ToString()));
-
-                    functionCalled = true;
-                }
-            }
-        } while (functionCalled);
-
-        return suppressOutput ? string.Empty : response.GetOutputText();
+            _agentInitLock.Release();
+        }
     }
 }

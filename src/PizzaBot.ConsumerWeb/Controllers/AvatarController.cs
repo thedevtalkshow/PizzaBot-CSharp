@@ -94,7 +94,7 @@ public class AvatarController(
 
         // Initialize the Foundry agent session on first connect (not on reconnects, to preserve conversation history)
         if (!isReconnecting)
-            agentService.InitializeSession(clientId, clientId.ToString("N"));
+            await agentService.InitializeSessionAsync(clientId, clientId.ToString("N"));
 
         ctx.TtsVoice = Request.Headers["TtsVoice"].FirstOrDefault() ?? _settings.TtsVoice;
         ctx.CustomVoiceEndpointId = Request.Headers["CustomVoiceEndpointId"].FirstOrDefault();
@@ -297,7 +297,7 @@ public class AvatarController(
     {
         // Get the full response from the Foundry agent (includes all tool calls)
         var agentStartTime = DateTime.Now;
-        var agentResponse = await Task.Run(() => agentService.SendMessage(clientId, userQuery));
+        var agentResponse = await agentService.SendMessageAsync(clientId, userQuery);
         var agentLatency = (int)(DateTime.Now.Subtract(agentStartTime).TotalMilliseconds + 0.5);
         Console.WriteLine($"[Agent] Response in {agentLatency}ms");
 
