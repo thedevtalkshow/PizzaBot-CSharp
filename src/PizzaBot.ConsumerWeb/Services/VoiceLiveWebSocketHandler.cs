@@ -104,6 +104,14 @@ public static class VoiceLiveWebSocketHandler
                     // What the assistant said (TTS text, final)
                     await SendJsonLockedAsync(ws, sendLock, new { type = "transcript", role = "assistant", text = assistantTranscript.Transcript }, ct);
                 }
+                else if (update is SessionUpdateResponseFunctionCallArgumentsDone funcCallDone)
+                {
+                    // The Foundry agent wants to call a local function tool — execute it and return the result
+                    // so the agent can continue generating its response.
+                    logger.LogInformation("[VoiceLive] Function call: {Name} args={Arguments}",
+                        funcCallDone.Name, funcCallDone.Arguments);
+                    await DispatchToolCallAsync(session, funcCallDone, logger, ct);
+                }
                 else if (update is SessionUpdateError error)
                 {
                     var msg = error.Error?.Message ?? "unknown error";
@@ -186,6 +194,47 @@ public static class VoiceLiveWebSocketHandler
                 logger.LogDebug("[VoiceLive] Unknown message type: {Type}", type);
                 break;
         }
+    }
+
+    // ── Tool dispatch ─────────────────────────────────────────────────────────
+
+    private static async Task DispatchToolCallAsync(
+        VoiceLiveSession session,
+        SessionUpdateResponseFunctionCallArgumentsDone funcCallDone,
+        ILogger logger,
+        CancellationToken ct)
+    {
+        string output;
+        try
+        {
+            if (funcCallDone.Name == nameof(PizzaCalculator.CalculateNumberOfPizzasToOrder))
+            {
+                using var doc = JsonDocument.Parse(funcCallDone.Arguments ?? "{}");
+                var root = doc.RootElement;
+                var numberOfPeople = root.TryGetProperty("numberOfPeople", out var np) ? np.GetInt32() : 1;
+                var appetite = root.TryGetProperty("appetite", out var ap) ? ap.GetString() ?? "average" : "average";
+
+                var pizzaCount = PizzaCalculator.CalculateNumberOfPizzasToOrder(numberOfPeople, appetite);
+                output = pizzaCount.ToString();
+
+                logger.LogInformation("[VoiceLive] Tool result: {Count} pizzas for {People} people ({Appetite} appetite)",
+                    pizzaCount, numberOfPeople, appetite);
+            }
+            else
+            {
+                logger.LogWarning("[VoiceLive] Unhandled function call: {Name}", funcCallDone.Name);
+                output = "Function not implemented.";
+            }
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "[VoiceLive] Error executing tool {Name}", funcCallDone.Name);
+            output = $"Error: {ex.Message}";
+        }
+
+        // Return the result to the agent so it can continue generating its response
+        await session.AddItemAsync(new FunctionCallOutputItem(funcCallDone.CallId, output), ct);
+        await session.StartResponseAsync(ct);
     }
 
     // ── WebSocket send helpers ────────────────────────────────────────────────

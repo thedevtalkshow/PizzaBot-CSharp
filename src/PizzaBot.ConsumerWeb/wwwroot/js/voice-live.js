@@ -37,6 +37,15 @@ const voiceLive = (() => {
         el('btnMic').disabled = !started;
     }
 
+    function setPlaceholderMessage(icon, html) {
+        const placeholder = el('videoPlaceholder');
+        if (!placeholder) return;
+        const iconEl = placeholder.querySelector('.pizza-icon');
+        const msgEl = placeholder.querySelector('p');
+        if (iconEl) iconEl.textContent = icon;
+        if (msgEl) msgEl.innerHTML = html;
+    }
+
     function appendTranscript(role, text) {
         const history = el('chatHistory');
         if (!history || !text?.trim()) return;
@@ -59,6 +68,10 @@ const voiceLive = (() => {
     async function start() {
         if (ws) return;
 
+        // Disable immediately so the user can't trigger a second connection while the first is starting
+        el('btnStart').disabled = true;
+        setPlaceholderMessage('⏳', 'Connecting to Lisa&hellip;');
+
         const protocol = location.protocol === 'https:' ? 'wss:' : 'ws:';
         ws = new WebSocket(`${protocol}//${location.host}/ws/voice-live`);
         ws.binaryType = 'arraybuffer';
@@ -71,12 +84,17 @@ const voiceLive = (() => {
             }
         };
 
-        ws.onerror = err => console.error('[VoiceLive] WebSocket error:', err);
+        ws.onerror = err => {
+            console.error('[VoiceLive] WebSocket error:', err);
+            setPlaceholderMessage('🍕', 'Click <strong>Start</strong> to begin your voice conversation with Lisa!');
+            el('btnStart').disabled = false;
+        };
 
         ws.onclose = () => {
             console.log('[VoiceLive] WebSocket closed.');
             cleanupMedia();
             setButtonState(false);
+            setPlaceholderMessage('🍕', 'Click <strong>Start</strong> to begin your voice conversation with Lisa!');
             ws = null;
         };
     }
@@ -87,6 +105,7 @@ const voiceLive = (() => {
                 if (msg.connected) {
                     console.log('[VoiceLive] Session ready — setting up avatar WebRTC.');
                     setButtonState(true);
+                    setPlaceholderMessage('🎬', 'Loading avatar&hellip;');
                     await setupAvatarWebRtc();
                 }
                 break;
@@ -121,10 +140,13 @@ const voiceLive = (() => {
         cleanupMedia();
         setButtonState(false);
 
-        // Hide avatar video
+        // Restore avatar placeholder
         const placeholder = el('videoPlaceholder');
         const remoteVideo = el('remoteVideo');
-        if (placeholder) placeholder.hidden = false;
+        if (placeholder) {
+            placeholder.hidden = false;
+            setPlaceholderMessage('🍕', 'Click <strong>Start</strong> to begin your voice conversation with Lisa!');
+        }
         if (remoteVideo) remoteVideo.innerHTML = '';
     }
 

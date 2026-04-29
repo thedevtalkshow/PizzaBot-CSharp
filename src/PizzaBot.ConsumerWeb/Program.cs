@@ -7,22 +7,10 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents();
 
-builder.Services.AddControllers();
-
-// Avatar config
-builder.Services.Configure<AvatarSettings>(builder.Configuration.GetSection("Avatar"));
-
 // PizzaBot Foundry agent config
 builder.Services.Configure<PizzaBotSettings>(builder.Configuration.GetSection("PizzaBot"));
 
-// Avatar services (existing /chat implementation)
-builder.Services.AddSingleton<IClientService, ClientService>();
-builder.Services.AddSingleton<FoundryAgentService>();
-builder.Services.AddHttpClient<IceTokenService>();
-builder.Services.AddHttpClient<SpeechTokenService>();
-builder.Services.AddHostedService<TokenRefreshBackgroundService>();
-
-// Voice Live settings + session factory (/voice-live implementation)
+// Voice Live settings + session factory
 builder.Services.Configure<VoiceLiveSettings>(builder.Configuration.GetSection("VoiceLive"));
 builder.Services.AddSingleton<VoiceLiveSessionService>();
 
@@ -56,7 +44,6 @@ app.UseWebSockets();
 app.UseAntiforgery();
 
 app.MapStaticAssets();
-app.MapControllers();
 
 // WebSocket endpoint for Voice Live — browser audio in, events out
 app.Map("/ws/voice-live", async (HttpContext context,

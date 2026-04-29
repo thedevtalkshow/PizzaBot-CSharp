@@ -15,6 +15,7 @@ builder.Services.AddCors(options =>
 
 var app = builder.Build();
 app.UseCors();
+app.UseStaticFiles();
 
 var jsonOptions = new JsonSerializerOptions
 {
@@ -39,15 +40,21 @@ app.MapGet("/api", async (IDataService db) =>
 });
 
 // Pizzas
-app.MapGet("/api/pizzas", async (IDataService db) =>
-    Results.Json(await db.GetPizzasAsync(), jsonOptions));
+app.MapGet("/api/pizzas", async (HttpContext http, IDataService db) =>
+{
+    var baseUrl = $"{http.Request.Scheme}://{http.Request.Host}";
+    var pizzas = (await db.GetPizzasAsync()).Select(p => WithAbsoluteImageUrl(p, baseUrl));
+    return Results.Json(pizzas, jsonOptions);
+});
 
-app.MapGet("/api/pizzas/{id}", async (string id, IDataService db) =>
+app.MapGet("/api/pizzas/{id}", async (string id, HttpContext http, IDataService db) =>
 {
     var pizza = await db.GetPizzaAsync(id);
-    return pizza is null
-        ? Results.Json(new ErrorResponse { Error = $"Pizza with ID {id} not found" }, jsonOptions, statusCode: 404)
-        : Results.Json(pizza, jsonOptions);
+    if (pizza is null)
+        return Results.Json(new ErrorResponse { Error = $"Pizza with ID {id} not found" }, jsonOptions, statusCode: 404);
+
+    var baseUrl = $"{http.Request.Scheme}://{http.Request.Host}";
+    return Results.Json(WithAbsoluteImageUrl(pizza, baseUrl), jsonOptions);
 });
 
 // Toppings
@@ -176,5 +183,21 @@ app.MapDelete("/api/orders/{id}", async (string id, [FromQuery] string? userId, 
         ? Results.Json(new ErrorResponse { Error = $"Order {id} cannot be cancelled (not in pending status)" }, jsonOptions, statusCode: 404)
         : Results.Json(OrderResponse.FromOrder(cancelled), jsonOptions);
 });
+
+// ── Helpers ──────────────────────────────────────────────────────────────────
+
+// Transform a bare image filename (e.g. "pizza-pic-1.jpg") to a full URL
+// pointing at the static file served by this API.
+static Pizza WithAbsoluteImageUrl(Pizza pizza, string baseUrl) =>
+    string.IsNullOrEmpty(pizza.ImageUrl) ? pizza
+    : new Pizza
+    {
+        Id = pizza.Id,
+        Name = pizza.Name,
+        Description = pizza.Description,
+        Price = pizza.Price,
+        Toppings = pizza.Toppings,
+        ImageUrl = $"{baseUrl}/images/{pizza.ImageUrl}",
+    };
 
 app.Run();

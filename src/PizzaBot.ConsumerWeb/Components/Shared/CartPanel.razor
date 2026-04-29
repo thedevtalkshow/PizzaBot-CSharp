@@ -48,9 +48,10 @@
                         {
                             var pizza = GetPizza(item.PizzaId);
                             <div class="order-item">
-                                @if (pizza?.ImageUrl is not null)
+                                @if (pizza?.ImageUrl is { Length: > 0 } imgUrl)
                                 {
-                                    <img src="@pizza.ImageUrl" alt="@pizza.Name" class="pizza-thumb" />
+                                    <img src="@imgUrl" alt="@pizza.Name" class="pizza-thumb"
+                                         onerror="this.replaceWith(Object.assign(document.createElement('div'),{className:'pizza-thumb-placeholder',textContent:'🍕'}))" />
                                 }
                                 else
                                 {

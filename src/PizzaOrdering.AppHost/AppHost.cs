@@ -13,4 +13,9 @@ var dashboard = builder.AddProject<Projects.PizzaBot_Dashboard>("pizzaDash")
                 .WithReference(api)
                 .WaitFor(api);
 
+var consumerWeb = builder.AddProject<Projects.PizzaBot_ConsumerWeb>("pizzaConsumerWeb")
+                .WithExternalHttpEndpoints()
+                .WithReference(api)
+                .WaitFor(api);
+
 builder.Build().Run();

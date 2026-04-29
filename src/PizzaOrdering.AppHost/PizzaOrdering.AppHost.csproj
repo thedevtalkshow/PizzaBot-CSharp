@@ -1,7 +1,8 @@
-<Project Sdk="Aspire.AppHost.Sdk/13.1.2">
+<Project Sdk="Aspire.AppHost.Sdk/13.2.4">
 
   <ItemGroup>
     <ProjectReference Include="..\PizzaApi\PizzaApi.csproj" />
+    <ProjectReference Include="..\PizzaBot.ConsumerWeb\PizzaBot.ConsumerWeb.csproj" />
     <ProjectReference Include="..\PizzaBot.Dashboard\PizzaBot.Dashboard.csproj" />
     <ProjectReference Include="..\PizzaBot.UseExistingAgent\PizzaBot.UseExistingAgent.csproj" />
     <ProjectReference Include="..\PizzaMcpServer\PizzaMcpServer.csproj" />

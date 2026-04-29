@@ -24,6 +24,7 @@
     <PackageVersion>0.1.0-beta</PackageVersion>
     <PackageTags>AI; MCP; server; pizza</PackageTags>
     <Description>Contoso Pizza MCP server — wraps the Pizza API as MCP tools for AI agents.</Description>
+    <UserSecretsId>b2850ec1-4298-40f6-be5f-9bec995c9e50</UserSecretsId>
   </PropertyGroup>
 
   <!-- Include additional files for browsing the MCP server. -->
